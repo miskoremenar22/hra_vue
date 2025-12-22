@@ -1,41 +1,79 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { ingredientIcons } from '../utils/icons';
+import { ref, computed } from 'vue'
+import { ingredientIcons } from '../utils/icons'
 
 const props = defineProps({
   ingredients: { type: Array, required: true }
-});
+})
 
-const emit = defineEmits(['select-ingredient']);
+const emit = defineEmits(['select-ingredient', 'drop-ingredient'])
 
-const isOpen = ref(false);
-const currentPage = ref(0); // 0 = prvá strana, 1 = druhá strana
+const isOpen = ref(false)
+const currentPage = ref(0)
 
-// Získanie ikony podľa názvu
-const getIcon = (name) => ingredientIcons[name] || "📦";
+/* ===== DRAG STATE ===== */
+const dragging = ref(false)
+const draggedIngredient = ref(null)
+const ghostX = ref(0)
+const ghostY = ref(0)
 
-// Výpočet pre 2 stĺpce x 5 riadkov
+/* ===== ICON ===== */
+const getIcon = (name) => ingredientIcons[name] || '📦'
+
+/* ===== PAGING ===== */
 const displayedIngredients = computed(() => {
-  const start = currentPage.value * 10;
-  return props.ingredients.slice(start, start + 10);
-});
+  const start = currentPage.value * 10
+  return props.ingredients.slice(start, start + 10)
+})
 
 const toggleMenu = () => {
-  isOpen.value = !isOpen.value;
-};
+  isOpen.value = !isOpen.value
+}
 
 const nextPage = () => {
-  currentPage.value = currentPage.value === 0 ? 1 : 0;
-};
+  currentPage.value = currentPage.value === 0 ? 1 : 0
+}
+
+/* ===== DRAG LOGIKA ===== */
+const startDrag = (e, ing) => {
+  dragging.value = true
+  draggedIngredient.value = ing
+  ghostX.value = e.clientX
+  ghostY.value = e.clientY
+
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onDrop)
+}
+
+const onMove = (e) => {
+  ghostX.value = e.clientX
+  ghostY.value = e.clientY
+}
+
+const onDrop = (e) => {
+  emit('drop-ingredient', {
+    ingredient: draggedIngredient.value,
+    x: e.clientX,
+    y: e.clientY
+  })
+
+  dragging.value = false
+  draggedIngredient.value = null
+
+  window.removeEventListener('mousemove', onMove)
+  window.removeEventListener('mouseup', onDrop)
+}
 </script>
 
 <template>
   <div class="ingredients-system">
+    <!-- OTVÁRACIE TLAČIDLO -->
     <button v-if="!isOpen" class="open-trigger" @click="toggleMenu">
       🥫
       <span class="label">Suroviny</span>
     </button>
 
+    <!-- ŠPAJZA -->
     <div v-if="isOpen" class="side-menu">
       <div class="menu-header">
         <h3>Špajza</h3>
@@ -43,11 +81,12 @@ const nextPage = () => {
       </div>
 
       <div class="ingredients-grid">
-        <div 
-          v-for="ing in displayedIngredients" 
-          :key="ing" 
+        <div
+          v-for="ing in displayedIngredients"
+          :key="ing"
           class="ing-item"
-          @click="emit('select-ingredient', ing)"
+          @mousedown.prevent="startDrag($event, ing)"
+          @mouseup="!dragging && emit('select-ingredient', ing)"
         >
           <div class="ing-icon">{{ getIcon(ing) }}</div>
           <span class="ing-name">{{ ing }}</span>
@@ -61,6 +100,17 @@ const nextPage = () => {
         </button>
       </div>
     </div>
+
+    <!-- 👻 GHOST INGREDIENCIA (TELEPORT) -->
+    <Teleport to="body">
+      <div
+        v-if="dragging"
+        class="drag-ghost"
+        :style="{ left: ghostX + 'px', top: ghostY + 'px' }"
+      >
+        {{ getIcon(draggedIngredient) }}
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -164,4 +214,14 @@ const nextPage = () => {
 }
 
 .page-info { font-size: 12px; color: #777; font-weight: bold; margin-left: 10px; }
+
+.drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  font-size: 42px;
+  transform: translate(-50%, -50%);
+  z-index: 999999; /* 👈 nad celou hrou */
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4));
+}
+
 </style>

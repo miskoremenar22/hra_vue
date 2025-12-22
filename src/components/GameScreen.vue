@@ -5,6 +5,8 @@ import IngredientsMenu from './IngredientsMenu.vue';
 import RecipesMenu from './RecipesMenu.vue';
 import { ingredientIcons } from '../utils/icons';
 
+import Customer from './Customers.vue'
+
 // Importy obrázkov
 import bgAsian from '../assets/backgrounds/bg-asian.jpg';
 import bgMexican from '../assets/backgrounds/bg-mexican.jpg';
@@ -38,6 +40,23 @@ const servePlate = () => {
   clearPlate();
 };
 
+const plateRef = ref(null)
+
+const handleDropIngredient = ({ ingredient, x, y }) => {
+  const plate = plateRef.value.getBoundingClientRect()
+
+  if (
+    x >= plate.left &&
+    x <= plate.right &&
+    y >= plate.top &&
+    y <= plate.bottom
+  ) {
+    if (onPlate.value.length < 6) {
+      onPlate.value.push(ingredient)
+    }
+  }
+}
+
 // --- POZADIE ---
 const backgrounds = {
   asian: bgAsian,
@@ -56,8 +75,7 @@ const backgroundStyle = computed(() => {
 </script>
 
 <template>
-  <div class="game-container" :style="backgroundStyle">
-    
+  <div class="game-container" :style="backgroundStyle">    
     <div class="hud">
       <button @click="emit('back')" class="exit-btn">❌ Menu</button>
       <div class="level-info">
@@ -66,33 +84,51 @@ const backgroundStyle = computed(() => {
       <div class="score-box">Body: {{ score }}</div>
     </div>
 
-    <div class="customer-area">
-      <div class="order-bubble">
-        <p>Prosím si: <strong>Maki Losos</strong> 🍣</p>
-      </div>
+    <div class="game">
+      <Customer :cuisine="cuisineType" />
     </div>
 
     <div class="counter-top">
       
       <div class="tray-system">
-        <div class="plate">
-          <div v-for="(ing, idx) in onPlate" :key="idx" class="ing-animated" :title="ing">
-            {{ getIcon(ing) }}
-          </div>
-          <p v-if="onPlate.length === 0" class="plate-empty">Položte suroviny...</p>
+      <div class="plate" ref="plateRef">
+        <div
+          v-for="(ing, idx) in onPlate"
+          :key="idx"
+          class="ing-animated"
+          :title="ing"
+        >
+          {{ getIcon(ing) }}
         </div>
-
-        <div class="plate-actions">
-          <button @click="clearPlate" class="btn-action clear" :disabled="onPlate.length === 0">🗑️</button>
-          <button @click="servePlate" class="btn-action serve" :disabled="onPlate.length === 0">ZVONIŤ 🛎️</button>
-        </div>
+        <p v-if="onPlate.length === 0" class="plate-empty">
+          Položte suroviny...
+        </p>
       </div>
+
+      <div class="plate-actions">
+        <button
+          @click="clearPlate"
+          class="btn-action clear"
+          :disabled="onPlate.length === 0"
+        >
+          🗑️
+        </button>
+        <button
+          @click="servePlate"
+          class="btn-action serve"
+          :disabled="onPlate.length === 0"
+        >
+          ZVONIŤ 🛎️
+        </button>
+      </div>
+    </div>
 
     </div>
 
     <IngredientsMenu 
       :ingredients="cuisineData.ingredients" 
       @select-ingredient="handleIngredientSelect"
+      @drop-ingredient="handleDropIngredient"
     />
 
     <RecipesMenu 
@@ -103,6 +139,14 @@ const backgroundStyle = computed(() => {
 </template>
 
 <style scoped>
+
+.game {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
 .game-container {
   width: 100vw;
   height: 100vh;
