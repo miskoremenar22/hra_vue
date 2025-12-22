@@ -2,9 +2,14 @@
   <div class="customer-wrapper">
     <div
       class="customer"
+      ref="customerEl"
       :style="{ transform: `translateX(${x}px)` }"
     >
-      <div v-if="arrived && order" class="order-bubble">
+      <div v-if="message" class="order-bubble">
+        <strong>{{ message }}</strong>
+      </div>
+
+      <div v-else-if="arrived && order" class="order-bubble">
         Prosím si:<br />
         <strong>{{ order.name }}</strong>
       </div>
@@ -15,7 +20,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, defineExpose } from 'vue'
 import gameData from '@/data/gameData.json'
 import customerSprite from '@/assets/customers/customer.svg'
 
@@ -25,58 +30,90 @@ const props = defineProps({
 
 const emit = defineEmits(['order-ready'])
 
-/* ===== POHYB ===== */
 const x = ref(0)
 const arrived = ref(false)
+const message = ref(null)
 
 let startX = 0
 let targetX = 0
 let startTime = null
-const DURATION = 10000 // ms – plynulé
+const DURATION = 9000
+
+const phase = ref('enter') // ✅ PRIDANÉ: "enter" | "leave"
 
 const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3)
 
-/* ===== OBJEDNÁVKA ===== */
 const order = ref(null)
+const customerEl = ref(null)
 
 const generateOrder = () => {
-  const recipes = gameData[props.cuisine].recipes
+  const recipes = gameData[props.cuisine]?.recipes || []
+  if (recipes.length === 0) return
   order.value = recipes[Math.floor(Math.random() * recipes.length)]
   emit('order-ready', order.value)
 }
 
-/* ===== ANIMÁCIA ===== */
-const animate = (timestamp) => {
-  if (!startTime) startTime = timestamp
-  const elapsed = timestamp - startTime
-  const t = Math.min(elapsed / DURATION, 1)
+const animate = (ts) => {
+  if (!startTime) startTime = ts
+  const t = Math.min((ts - startTime) / DURATION, 1)
 
-  const eased = easeOutCubic(t)
-  x.value = startX + (targetX - startX) * eased
+  x.value = startX + (targetX - startX) * easeOutCubic(t)
 
   if (t < 1) {
     requestAnimationFrame(animate)
   } else {
-    arrived.value = true
-    generateOrder()
+    // ✅ FIX: na konci robíme iné veci podľa fázy
+    if (phase.value === 'enter') {
+      arrived.value = true
+      generateOrder()
+    } else {
+      // phase === 'leave' -> nič negeneruj, len odíde
+      arrived.value = false
+    }
   }
 }
 
-const recalcPositions = () => {
-  const vw = window.innerWidth
-  startX = -vw * 0.6        // príde zľava (60 % šírky)
-  targetX = vw * 0.09      // finálna pozícia (5 % doprava)
-  x.value = startX
+const leave = () => {
+  arrived.value = false
+  phase.value = 'leave'
+  startTime = null
+  startX = x.value
+  targetX = window.innerWidth + 300
+  requestAnimationFrame(animate)
 }
 
+const react = (text) => {
+  message.value = text
+  setTimeout(() => {
+    message.value = null
+    leave()
+  }, 1300)
+}
+
+const recalc = () => {
+  const vw = window.innerWidth
+  startX = -vw * 0.6
+  targetX = vw * 0.09
+}
+
+defineExpose({
+  getRect: () => customerEl.value.getBoundingClientRect(),
+  react
+})
+
 onMounted(() => {
-  recalcPositions()
-  window.addEventListener('resize', recalcPositions)
+  recalc()
+  window.addEventListener('resize', recalc)
+
+  // ✅ štart príchodu
+  phase.value = 'enter'
+  startTime = null
+  x.value = startX
   requestAnimationFrame(animate)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', recalcPositions)
+  window.removeEventListener('resize', recalc)
 })
 </script>
 
