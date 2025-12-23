@@ -3,7 +3,7 @@
     <div
       class="customer"
       ref="customerEl"
-      :style="{ transform: `translateX(${x}px)` }"
+      :style="{ transform: `translateX(${x - queueIndex * 150}px)` }"
     >
       <div v-if="message" class="order-bubble">
         <strong>{{ message }}</strong>
@@ -25,7 +25,8 @@ import gameData from '@/data/gameData.json'
 import customerSprite from '@/assets/customers/customer.svg'
 
 const props = defineProps({
-  cuisine: { type: String, required: true }
+  cuisine: { type: String, required: true },
+  queueIndex: { type: Number, default: 0 }
 })
 
 const emit = defineEmits(['order-ready'])

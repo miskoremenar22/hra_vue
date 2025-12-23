@@ -1,257 +1,265 @@
 <script setup>
-import { ref, computed, onUnmounted } from 'vue';
-import gameData from '../data/gameData.json';
-import IngredientsMenu from './IngredientsMenu.vue';
-import RecipesMenu from './RecipesMenu.vue';
-import { ingredientIcons } from '../utils/icons';
-
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import gameData from '../data/gameData.json'
+import IngredientsMenu from './IngredientsMenu.vue'
+import RecipesMenu from './RecipesMenu.vue'
 import Customer from './Customers.vue'
+import { ingredientIcons } from '../utils/icons'
 
-// Importy obrázkov
-import bgAsian from '../assets/backgrounds/bg-asian.jpg';
-import bgMexican from '../assets/backgrounds/bg-mexican.jpg';
-import bgItalian from '../assets/backgrounds/bg-italian.jpg';
-import bgAmerican from '../assets/backgrounds/bg-american.png';
+import bgAsian from '../assets/backgrounds/bg-asian.jpg'
+import bgMexican from '../assets/backgrounds/bg-mexican.jpg'
+import bgItalian from '../assets/backgrounds/bg-italian.jpg'
+import bgAmerican from '../assets/backgrounds/bg-american.png'
 
-// ⬅️ PRIDANÉ (tácka na hotové jedlo)
-import trayImg from '../assets/restaurant/tray.svg';
+import trayImg from '../assets/restaurant/tray.svg'
 
-const props = defineProps(['levelId', 'cuisineType']);
-const emit = defineEmits(['back']);
+const props = defineProps(['levelId', 'cuisineType'])
+const emit = defineEmits(['back'])
 
-// --- LOGIKA HRY ---
-const onPlate = ref([]);
-const score = ref(0);
+/* =====================
+   STAVY
+===================== */
+const onPlate = ref([])
+const score = ref(0)
 
-const cuisineData = computed(() => gameData[props.cuisineType]);
+const cooking = ref(false)
+const cookProgress = ref(0)
 
-const getIcon = (name) => ingredientIcons[name] || "📦";
+const servedMeals = ref([]) // viac taccok
+const draggedMeal = ref(null)
 
-const handleIngredientSelect = (ingName) => {
-  // nechávam tvoje správanie + blok počas varenia
-  if (onPlate.value.length < 6 && !cooking.value) {
-    onPlate.value.push(ingName);
+const dragging = ref(false)
+const ghostX = ref(0)
+const ghostY = ref(0)
+
+/* =====================
+   DATA
+===================== */
+const cuisineData = computed(() => gameData[props.cuisineType])
+const getIcon = (n) => ingredientIcons[n] || '📦'
+
+/* =====================
+   INGREDIENCIE
+===================== */
+const handleIngredientSelect = (ing) => {
+  if (!cooking.value && onPlate.value.length < 6) {
+    onPlate.value.push(ing)
   }
-};
-
-const clearPlate = () => {
-  if (!cooking.value) onPlate.value = [];
-};
-
-/* =========================
-   OBJEDNÁVKA + VARENIE
-========================= */
-const currentOrder = ref(null);      
-const cooking = ref(false);         
-const cookProgress = ref(0);        
-const servedMeal = ref(null);       
-
-const COOK_TIME = 5000;              
-let cookRaf = null;
-
-const sameIngredients = (a, b) => {
-  if (!Array.isArray(a) || !Array.isArray(b)) return false;
-  if (a.length !== b.length) return false;
-  const sa = [...a].sort();
-  const sb = [...b].sort();
-  return sa.every((v, i) => v === sb[i]);
-};
-
-const servePlate = () => {
-  if (cooking.value) return;
-  if (!currentOrder.value) return;        // ešte nemáme objednávku
-  if (onPlate.value.length === 0) return; // nič na tanieri
-  if (servedMeal.value) return;           // už máme hotové jedlo na tácke
-
-  // spusti varenie
-  cooking.value = true;
-  cookProgress.value = 0;
-
-  const start = performance.now();
-
-  const tick = (now) => {
-    const elapsed = now - start;
-    cookProgress.value = Math.min(100, (elapsed / COOK_TIME) * 100);
-
-    if (elapsed < COOK_TIME) {
-      cookRaf = requestAnimationFrame(tick);
-    } else {
-      finishCooking();
-    }
-  };
-
-  cookRaf = requestAnimationFrame(tick);
-};
-
-const finishCooking = () => {
-  cooking.value = false
-  cookProgress.value = 0
-
-  const recipes = cuisineData.value.recipes
-
-  // 1️⃣ nájdi recept podľa ingrediencií
-  const matchedRecipe = recipes.find(r =>
-    sameIngredients(onPlate.value, r.ingredients)
-  )
-
-  if (!matchedRecipe) {
-    // ❌ žiadny recept neexistuje
-    servedMeal.value = {
-      name: 'Nepodarené jedlo',
-      correct: false,
-      points: 0
-    }
-  } else if (matchedRecipe.name === currentOrder.value.name) {
-    // ✅ správne jedlo
-    servedMeal.value = {
-      name: matchedRecipe.name,
-      correct: true,
-      points: matchedRecipe.points
-    }
-  } else {
-    // ⚠️ iné existujúce jedlo
-    servedMeal.value = {
-      name: matchedRecipe.name,
-      correct: false,
-      points: 0
-    }
-  }
-
-  onPlate.value = []
 }
 
-onUnmounted(() => {
-  if (cookRaf) cancelAnimationFrame(cookRaf);
-});
-
-/* =========================
-   DRAG & DROP SUROVÍN
-========================= */
 const plateRef = ref(null)
 
 const handleDropIngredient = ({ ingredient, x, y }) => {
-  if (cooking.value) return;
-  const plate = plateRef.value.getBoundingClientRect()
+  if (cooking.value || !plateRef.value) return
+  const r = plateRef.value.getBoundingClientRect()
 
-  if (
-    x >= plate.left &&
-    x <= plate.right &&
-    y >= plate.top &&
-    y <= plate.bottom
-  ) {
+  if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
     if (onPlate.value.length < 6) {
       onPlate.value.push(ingredient)
     }
   }
 }
 
-/* =========================
-   DRAG & DROP HOTOVÉHO JEDLA
-========================= */
-const customerRef = ref(null);
-const customerKey = ref(0);
+/* =====================
+   VARENIE
+===================== */
+const COOK_TIME = 5000
+let cookRAF = null
 
-const draggingServed = ref(false);
-const servedGhostX = ref(0);
-const servedGhostY = ref(0);
-
-const startDragServed = (e) => {
-  if (!servedMeal.value) return;
-
-  draggingServed.value = true;
-  servedGhostX.value = e.clientX;
-  servedGhostY.value = e.clientY;
-
-  window.addEventListener('mousemove', onMoveServed);
-  window.addEventListener('mouseup', onDropServed);
-};
-
-const onMoveServed = (e) => {
-  servedGhostX.value = e.clientX;
-  servedGhostY.value = e.clientY;
-};
-
-const onDropServed = (e) => {
-  const rect = customerRef.value?.getRect?.();
-  const droppedOnCustomer =
-    rect &&
-    e.clientX >= rect.left &&
-    e.clientX <= rect.right &&
-    e.clientY >= rect.top &&
-    e.clientY <= rect.bottom;
-
-  if (droppedOnCustomer && servedMeal.value) {
-
-  if (servedMeal.value.correct) {
-    score.value += servedMeal.value.points
-
-    customerRef.value?.react?.(
-      `Ďakujem! +${servedMeal.value.points} bodov`
-    )
-  } else {
-    customerRef.value?.react?.(`NIE TO SOM CHCEL!`)
-  }
-
-  servedMeal.value = null
-  currentOrder.value = null
-
-  // nový zákazník po odchode
-  setTimeout(() => {
-    customerKey.value += 1
-  }, 1800)
+const sameIngredients = (a, b) => {
+  if (!a || !b || a.length !== b.length) return false
+  return [...a].sort().every((v, i) => v === [...b].sort()[i])
 }
 
-  draggingServed.value = false;
-  window.removeEventListener('mousemove', onMoveServed);
-  window.removeEventListener('mouseup', onDropServed);
-};
+const servePlate = () => {
+  if (cooking.value || onPlate.value.length === 0) return
 
-/* --- POZADIE --- */
+  cooking.value = true
+  cookProgress.value = 0
+
+  const start = performance.now()
+
+  const tick = (now) => {
+    cookProgress.value = Math.min(100, ((now - start) / COOK_TIME) * 100)
+    if (now - start < COOK_TIME) {
+      cookRAF = requestAnimationFrame(tick)
+    } else {
+      finishCooking()
+    }
+  }
+
+  cookRAF = requestAnimationFrame(tick)
+}
+
+const finishCooking = () => {
+  cooking.value = false
+  cookProgress.value = 0
+
+  const recipes = cuisineData.value.recipes
+  const found = recipes.find(r =>
+    sameIngredients(onPlate.value, r.ingredients)
+  )
+
+  servedMeals.value.push({
+    id: Date.now() + Math.random(),
+    name: found ? found.name : 'Nepodarené jedlo',
+    correct: false,
+    points: found?.points || 0
+  })
+
+  onPlate.value = []
+}
+
+/* =====================
+   ZÁKAZNÍCI (VIAC)
+===================== */
+const customers = ref([])
+const customerRefs = ref({})
+const customerOrders = ref({})
+
+let spawnTimer = null
+
+const MAX_CUSTOMERS = 4
+
+const spawnCustomer = () => {
+  if (customers.value.length >= MAX_CUSTOMERS) return
+
+  customers.value.push({
+    id: Date.now() + Math.random(),
+    cuisine: props.cuisineType
+  })
+}
+
+const scheduleNextCustomer = () => {
+  const delay = 5000 + Math.random() * 10000
+  spawnTimer = setTimeout(() => {
+    spawnCustomer()
+    scheduleNextCustomer()
+  }, delay)
+}
+
+/* =====================
+   DRAG TÁCKY
+===================== */
+const startDragServed = (meal, e) => {
+  draggedMeal.value = meal
+  dragging.value = true
+  ghostX.value = e.clientX
+  ghostY.value = e.clientY
+
+  window.addEventListener('mousemove', moveDrag)
+  window.addEventListener('mouseup', dropDrag)
+}
+
+const moveDrag = (e) => {
+  ghostX.value = e.clientX
+  ghostY.value = e.clientY
+}
+
+const dropDrag = (e) => {
+  dragging.value = false
+  window.removeEventListener('mousemove', moveDrag)
+  window.removeEventListener('mouseup', dropDrag)
+
+  if (!draggedMeal.value) return
+
+  // 🔍 nájdi zákazníka, na ktorého si dropol
+  const hitCustomer = customers.value.find(c => {
+    const comp = customerRefs.value[c.id]
+    const r = comp?.getRect?.()
+    if (!r) return false
+
+    return (
+      e.clientX >= r.left &&
+      e.clientX <= r.right &&
+      e.clientY >= r.top &&
+      e.clientY <= r.bottom
+    )
+  })
+
+  if (!hitCustomer) {
+    draggedMeal.value = null
+    return
+  }
+
+  const order = customerOrders.value[hitCustomer.id]
+  const comp = customerRefs.value[hitCustomer.id]
+
+  if (draggedMeal.value.name === order.name) {
+    score.value += draggedMeal.value.points
+    comp.react(`Ďakujem! +${draggedMeal.value.points}`)
+  } else {
+    comp.react('NIE TO SOM CHCEL!')
+  }
+
+  // 🧹 odstráň tácku hneď
+  servedMeals.value = servedMeals.value.filter(
+    m => m.id !== draggedMeal.value.id
+  )
+
+  // ⏳ ODLOŽ ODCHOD ZÁKAZNÍKA
+  setTimeout(() => {
+    customers.value = customers.value.filter(c => c.id !== hitCustomer.id)
+    delete customerOrders.value[hitCustomer.id]
+  }, 2500) // musí byť ≥ čas react() animácie
+
+  draggedMeal.value = null
+}
+
+
+/* =====================
+   POZADIE
+===================== */
 const backgrounds = {
   asian: bgAsian,
   mexican: bgMexican,
   italian: bgItalian,
   american: bgAmerican
-};
+}
 
-const backgroundStyle = computed(() => {
-  return {
-    backgroundImage: `url(${backgrounds[props.cuisineType]})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center'
-  };
-});
+const backgroundStyle = computed(() => ({
+  backgroundImage: `url(${backgrounds[props.cuisineType]})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center'
+}))
+
+onMounted(() => {
+  scheduleNextCustomer()
+})
+
+onUnmounted(() => {
+  if (spawnTimer) clearTimeout(spawnTimer)
+  if (cookRAF) cancelAnimationFrame(cookRAF)
+})
 </script>
 
 <template>
-  <div class="game-container" :style="backgroundStyle">    
+  <div class="game-container" :style="backgroundStyle">
     <div class="hud">
       <button @click="emit('back')" class="exit-btn">❌ Menu</button>
       <div class="level-info">
-        Level: {{ levelId }} | {{ props.cuisineType.toUpperCase() }}
+        Level {{ levelId }} | {{ cuisineType.toUpperCase() }}
       </div>
       <div class="score-box">Body: {{ score }}</div>
     </div>
 
+    <!-- ZÁKAZNÍCI -->
     <div class="game">
       <Customer
-        :key="customerKey"
-        ref="customerRef"
-        :cuisine="cuisineType"
-        @order-ready="currentOrder = $event"
+        v-for="(c, i) in customers"
+        :key="c.id"
+        :ref="el => customerRefs[c.id] = el"
+        :cuisine="c.cuisine"
+        :queueIndex="i"
+        @order-ready="order => customerOrders[c.id] = order"
       />
     </div>
 
+    <!-- PULT -->
     <div class="counter-top">
-      
       <div class="tray-system">
         <div class="plate" ref="plateRef">
-          <div
-            v-for="(ing, idx) in onPlate"
-            :key="idx"
-            class="ing-animated"
-            :title="ing"
-          >
+          <div v-for="(ing, i) in onPlate" :key="i" class="ing-animated">
             {{ getIcon(ing) }}
           </div>
           <p v-if="onPlate.length === 0" class="plate-empty">
@@ -259,65 +267,49 @@ const backgroundStyle = computed(() => {
           </p>
         </div>
 
-        <!-- ⬅️ PRIDANÉ: SLIDER VARENIA (5s) -->
         <div v-if="cooking" class="cook-bar">
-          <div class="cook-progress" :style="{ width: cookProgress + '%' }"></div>
+          <div class="cook-progress" :style="{ width: cookProgress + '%' }" />
         </div>
 
         <div class="plate-actions">
-          <button
-            @click="clearPlate"
-            class="btn-action clear"
-            :disabled="onPlate.length === 0 || cooking"
-          >
-            🗑️
-          </button>
-          <button
-            @click="servePlate"
-            class="btn-action serve"
-            :disabled="onPlate.length === 0 || cooking || servedMeal"
-          >
+          <button class="btn-action serve" @click="servePlate">
             ZVONIŤ 🛎️
           </button>
         </div>
       </div>
-
     </div>
 
-    <!-- ⬅️ PRIDANÉ: HOTOVÉ JEDLO NA TÁCKE (DRAGGABLE) -->
+    <!-- TÁCKY -->
     <div
-      v-if="servedMeal"
+      v-for="(meal, index) in servedMeals"
+      :key="meal.id"
       class="served-meal"
-      :style="{ opacity: draggingServed ? 0 : 1 }"
-      @mousedown.prevent="startDragServed"
-      title="Potiahni k zákazníkovi"
+      :style="{ right: `calc(65% - ${index * 100}px)` }"
+      @mousedown.prevent="startDragServed(meal, $event)"
     >
-      <div class="served-label">{{ servedMeal.name }}</div>
-      <img :src="trayImg" alt="tray" />
+      <div class="served-label">{{ meal.name }}</div>
+      <img :src="trayImg" />
     </div>
 
-    <!-- 👻 GHOST PRE DRAG SERVED-MEAL -->
+    <!-- GHOST -->
     <Teleport to="body">
       <div
-        v-if="draggingServed"
+        v-if="dragging"
         class="served-ghost"
-        :style="{ left: servedGhostX + 'px', top: servedGhostY + 'px' }"
+        :style="{ left: ghostX + 'px', top: ghostY + 'px' }"
       >
-        <div class="served-label ghost-label">{{ servedMeal?.name }}</div>
-        <img :src="trayImg" alt="tray" />
+        <div class="served-label">{{ draggedMeal?.name }}</div>
+        <img :src="trayImg" />
       </div>
     </Teleport>
 
-    <IngredientsMenu 
-      :ingredients="cuisineData.ingredients" 
+    <IngredientsMenu
+      :ingredients="cuisineData.ingredients"
       @select-ingredient="handleIngredientSelect"
       @drop-ingredient="handleDropIngredient"
     />
 
-    <RecipesMenu 
-      :recipes="cuisineData.recipes" 
-    />
-
+    <RecipesMenu :recipes="cuisineData.recipes" />
   </div>
 </template>
 
