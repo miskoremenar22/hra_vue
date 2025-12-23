@@ -21,39 +21,56 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, defineExpose } from 'vue'
-import gameData from '@/data/gameData.json'
 import customerSprite from '@/assets/customers/customer.svg'
 
 const props = defineProps({
-  cuisine: { type: String, required: true },
-  queueIndex: { type: Number, default: 0 }
+  cuisine: String,
+  allowedRecipes: {
+    type: Array,
+    required: true
+  },
+  queueIndex: {
+    type: Number,
+    default: 0
+  }
 })
 
 const emit = defineEmits(['order-ready'])
 
+/* =====================
+   STAVY
+===================== */
 const x = ref(0)
 const arrived = ref(false)
 const message = ref(null)
+const order = ref(null)
+const customerEl = ref(null)
 
+/* =====================
+   ANIMÁCIA
+===================== */
 let startX = 0
 let targetX = 0
 let startTime = null
 const DURATION = 9000
-
-const phase = ref('enter') // ✅ PRIDANÉ: "enter" | "leave"
+const phase = ref('enter') // enter | leave
 
 const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3)
 
-const order = ref(null)
-const customerEl = ref(null)
-
+/* =====================
+   OBJEDNÁVKA
+===================== */
 const generateOrder = () => {
-  const recipes = gameData[props.cuisine]?.recipes || []
-  if (recipes.length === 0) return
+  const recipes = props.allowedRecipes
+  if (!recipes || recipes.length === 0) return
+
   order.value = recipes[Math.floor(Math.random() * recipes.length)]
   emit('order-ready', order.value)
 }
 
+/* =====================
+   ANIMATE LOOP
+===================== */
 const animate = (ts) => {
   if (!startTime) startTime = ts
   const t = Math.min((ts - startTime) / DURATION, 1)
@@ -63,17 +80,16 @@ const animate = (ts) => {
   if (t < 1) {
     requestAnimationFrame(animate)
   } else {
-    // ✅ FIX: na konci robíme iné veci podľa fázy
     if (phase.value === 'enter') {
       arrived.value = true
       generateOrder()
-    } else {
-      // phase === 'leave' -> nič negeneruj, len odíde
-      arrived.value = false
     }
   }
 }
 
+/* =====================
+   ODCHOD
+===================== */
 const leave = () => {
   arrived.value = false
   phase.value = 'leave'
@@ -91,12 +107,18 @@ const react = (text) => {
   }, 1300)
 }
 
+/* =====================
+   RESIZE
+===================== */
 const recalc = () => {
   const vw = window.innerWidth
   startX = -vw * 0.6
   targetX = vw * 0.09
 }
 
+/* =====================
+   EXPOSE
+===================== */
 defineExpose({
   getRect: () => customerEl.value.getBoundingClientRect(),
   react
@@ -106,7 +128,6 @@ onMounted(() => {
   recalc()
   window.addEventListener('resize', recalc)
 
-  // ✅ štart príchodu
   phase.value = 'enter'
   startTime = null
   x.value = startX
