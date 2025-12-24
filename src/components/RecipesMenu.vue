@@ -44,8 +44,13 @@ const nextPage = () => {
         </div>
       </div>
 
-      <div class="menu-footer">
-        <button class="next-btn" @click="nextPage">➡</button>
+      <div v-if="recipes.length > itemsPerPage" class="menu-footer">
+        <span class="page-info">
+          {{ currentPage + 1 }} / {{ Math.ceil(recipes.length / itemsPerPage) }}
+        </span>
+        <button class="next-btn" @click="nextPage">
+          {{ (currentPage + 1) * itemsPerPage < recipes.length ? '➡' : '⬅' }}
+        </button>
       </div>
     </div>
   </div>
@@ -63,33 +68,94 @@ const nextPage = () => {
 .open-trigger .label { font-size: 10px; color: white; font-weight: bold; }
 
 .side-menu {
-  width: 280px; height: 500px; background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px; border: 3px solid #2e7d32;
-  display: flex; flex-direction: column; position: absolute; bottom: 0; right: 0;
+  width: 280px;
+  height: 500px;
+  background: white; /* Čisté biele pozadie pre vnútro */
+  border-radius: 20px;
+  border: 3px solid #2e7d32;
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  box-shadow: -5px 5px 20px rgba(0,0,0,0.3);
+  overflow: hidden; /* Dôležité: aby nič nepretekalo cez zaoblené rohy */
 }
 
 .menu-header {
-  padding: 15px; display: flex; align-items: center;
-  background: #2e7d32; color: white; border-radius: 15px 15px 0 0;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  background: #2e7d32;
+  color: white;
+  /* Odstránil som border-radius, rieši to overflow: hidden na side-menu */
 }
 
-.close-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 10px; }
-
-.recipes-list { flex-grow: 1; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-
-.recipe-item {
-  background: #f1f8e9; padding: 10px; border-radius: 10px;
-  border-bottom: 2px solid #c8e6c9;
+.recipes-list {
+  flex-grow: 1; /* Vyplní priestor medzi headerom a footerom */
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fdfdfd; /* Jemne odlíšené pozadie zoznamu */
 }
 
-.recipe-name { font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #1b5e20; }
+/* UPRAVENÝ FOOTER */
+.menu-footer {
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between; /* Text vľavo, šípka vpravo */
+  align-items: center;
+  background: #f1f8e9; /* Svetlozelený podklad päty */
+  border-top: 2px solid #c8e6c9; /* Deliaca čiara od zoznamu */
+}
 
-.recipe-formula { font-size: 20px; letter-spacing: 5px; }
-
-.menu-footer { padding: 10px; display: flex; justify-content: center; }
+.page-info {
+  font-size: 13px;
+  color: #2e7d32;
+  font-weight: bold;
+}
 
 .next-btn {
-  background: #4caf50; border: none; color: white;
-  width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+  background: #4caf50;
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: transform 0.2s;
 }
+
+.next-btn:active {
+  transform: scale(0.9);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+  margin-right: 12px; /* Odsadenie od nadpisu */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.close-btn:hover {
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+.close-btn:active {
+  transform: scale(0.9);
+}
+
+
 </style>

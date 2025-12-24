@@ -554,22 +554,26 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 15px;
+  transform: translateY(30px);
 }
 
 .plate {
   width: 450px;
   height: 140px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 5px solid #bdc3c7;
-  border-radius: 50% / 30%;
+  /* Zmeň alebo pridaj tieto riadky: */
+  background: transparent;    /* Odstráni farbu pozadia */
+  border: none;               /* Odstráni rámik */
+  box-shadow: none;           /* Odstráni tieň pod tanierom */
+  
+  /* Tieto ponechaj kvôli funkčnosti */
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 10px;
-  box-shadow: 0 8px 0 #95a5a6;
+  position: relative; 
 }
 
-.plate-empty { color: #bdc3c7; font-style: italic; }
+.plate-empty { color: #323232; font-style: italic; }
 
 .ing-animated {
   font-size: 40px;

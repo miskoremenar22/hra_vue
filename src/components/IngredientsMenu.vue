@@ -6,7 +6,8 @@ const props = defineProps({
   ingredients: { type: Array, required: true }
 })
 
-const emit = defineEmits(['select-ingredient', 'drop-ingredient'])
+// Odstránil som select-ingredient, zostáva len drop
+const emit = defineEmits(['drop-ingredient'])
 
 const isOpen = ref(false)
 const currentPage = ref(0)
@@ -34,7 +35,7 @@ const nextPage = () => {
   currentPage.value = currentPage.value === 0 ? 1 : 0
 }
 
-/* ===== DRAG LOGIKA ===== */
+/* ===== DRAG LOGIKA (Iba Drag & Drop) ===== */
 const startDrag = (e, ing) => {
   dragging.value = true
   draggedIngredient.value = ing
@@ -51,6 +52,7 @@ const onMove = (e) => {
 }
 
 const onDrop = (e) => {
+  // Vždy vyšleme pozíciu dropu tam, kde je myš v momente pustenia
   emit('drop-ingredient', {
     ingredient: draggedIngredient.value,
     x: e.clientX,
@@ -67,13 +69,11 @@ const onDrop = (e) => {
 
 <template>
   <div class="ingredients-system">
-    <!-- OTVÁRACIE TLAČIDLO -->
     <button v-if="!isOpen" class="open-trigger" @click="toggleMenu">
       🥫
       <span class="label">Suroviny</span>
     </button>
 
-    <!-- ŠPAJZA -->
     <div v-if="isOpen" class="side-menu">
       <div class="menu-header">
         <h3>Špajza</h3>
@@ -86,22 +86,21 @@ const onDrop = (e) => {
           :key="ing"
           class="ing-item"
           @mousedown.prevent="startDrag($event, ing)"
-          @mouseup="!dragging && emit('select-ingredient', ing)"
         >
           <div class="ing-icon">{{ getIcon(ing) }}</div>
           <span class="ing-name">{{ ing }}</span>
         </div>
       </div>
 
-      <div class="menu-footer">
-        <span class="page-info">{{ currentPage + 1 }} / 2</span>
+      <div v-if="ingredients.length > 10" class="menu-footer">
+        <span class="page-info">{{ currentPage + 1 }} / {{ Math.ceil(ingredients.length / 10) }}</span>
+  
         <button class="nav-btn" @click="nextPage">
-          {{ currentPage === 0 ? '➡' : '⬅' }}
+        {{ (currentPage + 1) * 10 < ingredients.length ? '➡' : '⬅' }}
         </button>
       </div>
     </div>
 
-    <!-- 👻 GHOST INGREDIENCIA (TELEPORT) -->
     <Teleport to="body">
       <div
         v-if="dragging"
@@ -182,9 +181,12 @@ const onDrop = (e) => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: grab; /* Zmenené na grab pre vizuálnu spätnú väzbu */
   transition: all 0.2s;
+  user-select: none;
 }
+
+.ing-item:active { cursor: grabbing; }
 
 .ing-item:hover {
   transform: translateY(-3px);
@@ -192,8 +194,8 @@ const onDrop = (e) => {
   background: #fffdf9;
 }
 
-.ing-icon { font-size: 28px; margin-bottom: 2px; }
-.ing-name { font-size: 10px; text-align: center; font-weight: bold; color: #5d4037; padding: 0 5px; }
+.ing-icon { font-size: 28px; margin-bottom: 2px; pointer-events: none; }
+.ing-name { font-size: 10px; text-align: center; font-weight: bold; color: #5d4037; padding: 0 5px; pointer-events: none; }
 
 .menu-footer {
   padding: 10px;
@@ -218,10 +220,9 @@ const onDrop = (e) => {
 .drag-ghost {
   position: fixed;
   pointer-events: none;
-  font-size: 42px;
+  font-size: 45px;
   transform: translate(-50%, -50%);
-  z-index: 999999; /* 👈 nad celou hrou */
+  z-index: 999999;
   filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4));
 }
-
 </style>
