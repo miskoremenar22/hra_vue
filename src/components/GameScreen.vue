@@ -81,12 +81,25 @@ const handleIngredientSelect = (ing) => {
   }
 }
 
+/* =====================
+   INGREDIENCIE
+===================== */
 const handleDropIngredient = ({ ingredient, x, y }) => {
   if (cooking.value || !plateRef.value) return
   const r = plateRef.value.getBoundingClientRect()
 
   if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
-    if (onPlate.value.length < 6) onPlate.value.push(ingredient)
+    if (onPlate.value.length < 6) {
+      // VYPRACOVANIE PERCENTUÁLNEJ POZÍCIE
+      const posX = ((x - r.left) / r.width) * 100
+      const posY = ((y - r.top) / r.height) * 100
+      
+      onPlate.value.push({
+        name: ingredient,
+        x: posX,
+        y: posY
+      })
+    }
   }
 }
 
@@ -123,12 +136,18 @@ const servePlate = () => {
   cookRAF = requestAnimationFrame(tick)
 }
 
+/* =====================
+   UPRAVENÉ POROVNANIE RECEPTU
+===================== */
+// Keďže onPlate má teraz objekty, musíme z nich pre porovnanie vytiahnuť len mená
 const finishCooking = () => {
   cooking.value = false
   cookProgress.value = 0
 
+  const ingredientNamesOnPlate = onPlate.value.map(item => item.name)
+
   const found = allowedRecipes.value.find(r =>
-    sameIngredients(onPlate.value, r.ingredients)
+    sameIngredients(ingredientNamesOnPlate, r.ingredients)
   )
 
   servedMeals.value.push({
@@ -373,35 +392,33 @@ onUnmounted(() => {
       <div class="level-info">
         Level {{ levelId }} | {{ cuisineType.toUpperCase() }}
       </div>
-      <!-- <div class="score-box">Body: {{ score }}</div> -->
-     <div class="level-progress">
-      <div class="progress-bar">
-        <div
-          class="progress-fill"
-          :style="{ width: levelProgress + '%' }"
-        />
+      
+      <div class="level-progress">
+        <div class="progress-bar">
+          <div
+            class="progress-fill"
+            :style="{ width: levelProgress + '%' }"
+          />
 
-        <div class="stars-row">
-          <span
-            v-for="i in 3"
-            :key="i"
-            class="star"
-            :class="{ active: i <= stars }"
-          >
-            ★
-          </span>
+          <div class="stars-row">
+            <span
+              v-for="i in 3"
+              :key="i"
+              class="star"
+              :class="{ active: i <= stars }"
+            >
+              ★
+            </span>
+          </div>
+        </div>
+        <div class="score-text">
+          {{ score }} / {{ currentLevelConfig.requiredScore }}
         </div>
       </div>
-      <div class="score-text">
-        {{ score }} / {{ currentLevelConfig.requiredScore }}
-      </div>
-  </div>
     </div>
 
-
     <div class="game">
-      
-    <div class="timer">
+      <div class="timer">
         <div class="timer-bar">
           <div
             class="timer-fill"
@@ -428,27 +445,19 @@ onUnmounted(() => {
     <div class="counter-top">
       <div class="tray-system">
         <div class="plate" ref="plateRef">
-          <div v-for="(ing, i) in onPlate" :key="i" class="ing-animated">
-            {{ getIcon(ing) }}
+          <div v-for="(ing, i) in onPlate" :key="i" class="ing-animated"
+              :style="{ left: ing.x + '%', top: ing.y + '%', position: 'absolute' }">
+            {{ getIcon(ing.name) }}
           </div>
-          <p v-if="onPlate.length === 0" class="plate-empty">
-            Položte suroviny...
-          </p>
+          <p v-if="onPlate.length === 0" class="plate-empty">Položte suroviny...</p>
         </div>
 
         <div v-if="cooking" class="cook-bar">
           <div class="cook-progress" :style="{ width: cookProgress + '%' }" />
         </div>
-
-        <div class="plate-actions">
-          <button class="btn-action serve" @click="servePlate">
-            ZVONIŤ 🛎️
-          </button>
-        </div>
       </div>
     </div>
 
-    <!-- HOTOVÉ JEDLÁ -->
     <div
       v-for="(meal, index) in servedMeals"
       :key="meal.id"
@@ -472,8 +481,10 @@ onUnmounted(() => {
 
     <IngredientsMenu
       :ingredients="allowedIngredients"
+      :is-serve-disabled="cooking || onPlate.length === 0"
       @select-ingredient="handleIngredientSelect"
       @drop-ingredient="handleDropIngredient"
+      @serve="servePlate"
     />
 
     <RecipesMenu :recipes="allowedRecipes" />
@@ -554,30 +565,38 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 15px;
-  transform: translateY(30px);
+  /* Už nepotrebujeme translateY, ak je tanier presne tam, kde má byť */
 }
 
 .plate {
-  width: 450px;
-  height: 140px;
-  /* Zmeň alebo pridaj tieto riadky: */
-  background: transparent;    /* Odstráni farbu pozadia */
-  border: none;               /* Odstráni rámik */
-  box-shadow: none;           /* Odstráni tieň pod tanierom */
+  /* ZMENA: namiesto fixných 450px použijeme dynamickú šírku */
+  width: clamp(280px, 45vw, 500px); 
+  height: clamp(80px, 15vh, 150px);
   
-  /* Tieto ponechaj kvôli funkčnosti */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  position: relative; 
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  
+  position: relative; /* Dôležité pre absolute pozíciu surovín vo vnútri */
+  display: block;    /* Zmeníme z flexu na block, suroviny si riadime sami */
+
+  /* ZMEŇ TIETO RIADKY: */
+  background: rgba(255, 0, 0, 0.3); /* Priesvitná červená, aby si videl plochu */
+  border: 2px dashed red;           /* Prerušovaný červený rámik */
+  box-shadow: 0 0 10px red;
 }
 
 .plate-empty { color: #323232; font-style: italic; }
 
 .ing-animated {
-  font-size: 40px;
+  /* ZMENA: responzívna veľkosť suroviny */
+  font-size: clamp(25px, 5vw, 45px); 
+  
   filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.1));
+  pointer-events: none;
+  
+  /* Vycentrovanie ikony na bod dropnutia */
+  transform: translate(-50%, -50%); 
 }
 
 .plate-actions { display: flex; gap: 10px; }
@@ -592,7 +611,35 @@ onUnmounted(() => {
 }
 
 .clear { background: #95a5a6; }
-.serve { background: #2ecc71; font-size: 1.1rem; }
+.serve {
+  width: 80px;
+  height: 80px;
+  border-radius: 15px;
+  border: 4px solid #fff;
+  background: #2ecc71;
+  font-size: 2.2rem;
+  margin-left: 5px;
+  margin-bottom: -20px;
+  display: flex;
+  align-items: center;    /* Vertikálne vycentrovanie */
+  justify-content: center; /* Horizontálne vycentrovanie */
+  box-shadow: 0 4px 0 #27ae60; /* 3D efekt */
+  transition: all 0.1s;
+}
+
+.serve:disabled {
+  background: #bdc3c7;
+  box-shadow: 0 4px 0 #95a5a6;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.serve:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #27ae60;
+}
+
+
 .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* =========================
@@ -741,6 +788,19 @@ onUnmounted(() => {
   font-size: 12px;
   text-align: right;
   color: rgba(255,255,255,0.85);
+}
+
+.plate {
+  /* Pôvodne: clamp(280px, 45vw, 500px) */
+  width: clamp(200px, 35vw, 380px); 
+  
+  /* Pôvodne: clamp(80px, 15vh, 150px) */
+  height: clamp(60px, 10vh, 110px);
+
+  position: relative;
+  margin: 0 auto;
+  /* Ak si mal zapnutý červený border na ladenie, nechaj si ho, kým to nezmenšíš */
+  background: rgba(255, 0, 0, 0.2); 
 }
 
 </style>

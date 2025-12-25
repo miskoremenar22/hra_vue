@@ -24,7 +24,7 @@ const nextPage = () => {
   <div class="recipes-system">
     <button v-if="!isOpen" class="open-trigger" @click="isOpen = true">
       📖
-      <span class="label">Recepty</span>
+      <!-- <span class="label">Recepty</span> -->
     </button>
 
     <div v-if="isOpen" class="side-menu">
@@ -57,11 +57,11 @@ const nextPage = () => {
 </template>
 
 <style scoped>
-.recipes-system { position: absolute; bottom: 20px; right: 20px; z-index: 100; }
+.recipes-system { position: absolute; bottom: 20px; right: 30px; z-index: 100; }
 
 .open-trigger {
   width: 80px; height: 80px; border-radius: 15px; border: 4px solid #fff;
-  background: #4caf50; font-size: 30px; cursor: pointer;
+  background: #4caf50; font-size: 2.5rem; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 

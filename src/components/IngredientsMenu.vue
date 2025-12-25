@@ -2,12 +2,13 @@
 import { ref, computed } from 'vue'
 import { ingredientIcons } from '../utils/icons'
 
+
 const props = defineProps({
-  ingredients: { type: Array, required: true }
+  ingredients: { type: Array, required: true },
+  isServeDisabled: { type: Boolean, default: false }
 })
 
-// Odstránil som select-ingredient, zostáva len drop
-const emit = defineEmits(['drop-ingredient'])
+const emit = defineEmits(['drop-ingredient', 'serve', 'select-ingredient']);
 
 const isOpen = ref(false)
 const currentPage = ref(0)
@@ -69,9 +70,20 @@ const onDrop = (e) => {
 
 <template>
   <div class="ingredients-system">
-    <button v-if="!isOpen" class="open-trigger" @click="toggleMenu">
-      🥫
-      <span class="label">Suroviny</span>
+    <div v-if="!isOpen" class="triggers-wrapper">
+      <button class="open-trigger" @click="toggleMenu">
+        <span class="icon">🥫</span>
+        <!--<span class="label">Suroviny</span> -->
+      </button>
+    </div>
+
+    <button 
+      class="serve-btn" 
+      :class="{ 'shifted': isOpen }"
+      @click="$emit('serve')" 
+      :disabled="isServeDisabled"
+    >
+      🛎️
     </button>
 
     <div v-if="isOpen" class="side-menu">
@@ -96,7 +108,7 @@ const onDrop = (e) => {
         <span class="page-info">{{ currentPage + 1 }} / {{ Math.ceil(ingredients.length / 10) }}</span>
   
         <button class="nav-btn" @click="nextPage">
-        {{ (currentPage + 1) * 10 < ingredients.length ? '➡' : '⬅' }}
+          {{ (currentPage + 1) * 10 < ingredients.length ? '➡' : '⬅' }}
         </button>
       </div>
     </div>
@@ -114,63 +126,138 @@ const onDrop = (e) => {
 </template>
 
 <style scoped>
+/* Základný kontajner */
 .ingredients-system {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  z-index: 100;
+  position: relative;
+  z-index: 1000;
 }
 
-.open-trigger {
+/* Obal pre tlačidlá v zatvorenom stave */
+.triggers-wrapper {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  display: flex;
+  align-items: flex-end;
+  gap: 15px; /* Gapa medzi Surovinami a Zvončekom */
+}
+
+/* Spoločný štýl pre obe hlavné tlačidlá */
+.open-trigger, .serve-btn {
   width: 80px;
   height: 80px;
   border-radius: 15px;
   border: 4px solid #fff;
-  background: #ff9800;
-  font-size: 30px;
-  cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.open-trigger .label { font-size: 10px; color: white; font-weight: bold; }
+/* Tlačidlo Suroviny 🥫 */
+.open-trigger {
+  background: #ff9800;
+}
 
+.open-trigger .icon {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.open-trigger .label {
+  font-size: 13px; /* Zväčšený text */
+  color: white;
+  font-weight: 900; /* Extra hrubý */
+  text-transform: uppercase;
+  margin-top: -2px;
+}
+
+/* Tlačidlo Zvoniť 🛎️ */
+.serve-btn {
+  position: fixed; /* Musí byť fixed, aby sa hýbalo nezávisle */
+  bottom: 20px;
+  left: 115px; /* Základná pozícia (20 + 80 + 15 gapa) */
+  background: #2ecc71;
+  font-size: 2.5rem;
+}
+
+/* POSUNUTIE ZVONČEKA DOSTRANY */
+.serve-btn.shifted {
+  /* Menu má 240px + okraj 20px + gapa 15px = 275px */
+  left: 275px; 
+  transform: scale(0.9); /* Jemne ho zmenšíme, aby nezavadzalo */
+}
+
+.serve-btn:disabled {
+  background: #bdc3c7;
+  opacity: 0.7;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.serve-btn:hover:not(:disabled), .open-trigger:hover {
+  transform: translateY(-5px);
+  filter: brightness(1.1);
+}
+
+/* ŠPAJZA (Side Menu) */
 .side-menu {
   width: 240px;
   height: 520px;
   background: rgba(255, 255, 255, 0.98);
   border-radius: 20px;
-  border: 3px solid #5d4037;
+  border: 4px solid #5d4037; /* Trochu hrubší pre lepší kontrast */
   display: flex;
   flex-direction: column;
-  box-shadow: 5px 5px 20px rgba(0,0,0,0.4);
-  position: absolute;
-  bottom: 0;
-  left: 0;
+  box-shadow: 5px 5px 25px rgba(0,0,0,0.5);
+  position: fixed; /* Zmenené na fixed pre stabilitu */
+  bottom: 20px;
+  left: 20px;
+  z-index: 1100;
 }
 
 .menu-header {
-  padding: 15px;
+  padding: 12px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: #5d4037;
   color: white;
-  border-radius: 15px 15px 0 0;
+  border-radius: 14px 14px 0 0;
 }
 
-.close-btn { background: none; border: none; color: white; font-size: 22px; cursor: pointer; }
+.menu-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+}
+
+.close-btn { 
+  background: rgba(255,255,255,0.2); 
+  border: none; 
+  color: white; 
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 18px; 
+  cursor: pointer; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover { background: rgba(255,255,255,0.4); }
 
 .ingredients-grid {
   flex-grow: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: repeat(5, 1fr);
-  gap: 8px;
-  padding: 10px;
+  gap: 10px;
+  padding: 12px;
 }
 
 .ing-item {
@@ -181,7 +268,7 @@ const onDrop = (e) => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  cursor: grab; /* Zmenené na grab pre vizuálnu spätnú väzbu */
+  cursor: grab;
   transition: all 0.2s;
   user-select: none;
 }
@@ -189,40 +276,53 @@ const onDrop = (e) => {
 .ing-item:active { cursor: grabbing; }
 
 .ing-item:hover {
-  transform: translateY(-3px);
+  transform: scale(1.05);
   border-color: #ff9800;
   background: #fffdf9;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-.ing-icon { font-size: 28px; margin-bottom: 2px; pointer-events: none; }
-.ing-name { font-size: 10px; text-align: center; font-weight: bold; color: #5d4037; padding: 0 5px; pointer-events: none; }
+.ing-icon { font-size: 32px; margin-bottom: 2px; pointer-events: none; }
+.ing-name { 
+  font-size: 11px; 
+  text-align: center; 
+  font-weight: 800; 
+  color: #5d4037; 
+  padding: 0 5px; 
+  pointer-events: none;
+  text-transform: uppercase;
+}
 
 .menu-footer {
-  padding: 10px;
+  padding: 10px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-top: 1px solid #eee;
 }
 
 .nav-btn {
   background: #ff9800;
   border: none;
   color: white;
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 20px;
+  box-shadow: 0 3px 0 #e68a00;
 }
 
-.page-info { font-size: 12px; color: #777; font-weight: bold; margin-left: 10px; }
+.nav-btn:active { transform: translateY(2px); box-shadow: none; }
+
+.page-info { font-size: 14px; color: #5d4037; font-weight: 900; }
 
 .drag-ghost {
   position: fixed;
   pointer-events: none;
-  font-size: 45px;
+  font-size: 50px;
   transform: translate(-50%, -50%);
   z-index: 999999;
-  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4));
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.4));
 }
 </style>
