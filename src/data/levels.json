@@ -13,28 +13,28 @@
       {
         "level": 2,
         "difficulty": "medium",
-        "timeLimit": 160,
+        "timeLimit": 180,
         "maxCustomers": 3,
         "spawnInterval": { "min": 6, "max": 12 },
-        "requiredScore": 700,
+        "requiredScore": 400,
         "recipes": ["a4", "a5", "a8", "a16"]
       },
       {
         "level": 3,
         "difficulty": "hard",
-        "timeLimit": 140,
+        "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 5, "max": 10 },
-        "requiredScore": 1400,
+        "requiredScore": 50,
         "recipes": ["a6", "a7", "a10", "a12", "a13", "a18"]
       },
       {
         "level": 4,
         "difficulty": "expert",
-        "timeLimit": 120,
+        "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 4, "max": 8 },
-        "requiredScore": 2500,
+        "requiredScore": 50,
         "recipes": ["a11", "a14", "a17", "a19"]
       }
     ]
@@ -54,7 +54,7 @@
       {
         "level": 6,
         "difficulty": "medium",
-        "timeLimit": 160,
+        "timeLimit": 180,
         "maxCustomers": 3,
         "spawnInterval": { "min": 7, "max": 12 },
         "requiredScore": 650,
@@ -63,7 +63,7 @@
       {
         "level": 7,
         "difficulty": "hard",
-        "timeLimit": 140,
+        "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 5, "max": 10 },
         "requiredScore": 1300,
@@ -72,7 +72,7 @@
       {
         "level": 8,
         "difficulty": "expert",
-        "timeLimit": 120,
+        "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 4, "max": 8 },
         "requiredScore": 2400,
@@ -95,7 +95,7 @@
       {
         "level": 10,
         "difficulty": "medium",
-        "timeLimit": 160,
+        "timeLimit": 180,
         "maxCustomers": 3,
         "spawnInterval": { "min": 7, "max": 12 },
         "requiredScore": 750,
@@ -104,7 +104,7 @@
       {
         "level": 11,
         "difficulty": "hard",
-        "timeLimit": 140,
+        "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 5, "max": 10 },
         "requiredScore": 1500,
@@ -113,7 +113,7 @@
       {
         "level": 12,
         "difficulty": "expert",
-        "timeLimit": 120,
+        "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 4, "max": 8 },
         "requiredScore": 2600,
@@ -136,7 +136,7 @@
       {
         "level": 14,
         "difficulty": "medium",
-        "timeLimit": 160,
+        "timeLimit": 180,
         "maxCustomers": 3,
         "spawnInterval": { "min": 7, "max": 12 },
         "requiredScore": 800,
@@ -145,7 +145,7 @@
       {
         "level": 15,
         "difficulty": "hard",
-        "timeLimit": 140,
+        "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 5, "max": 10 },
         "requiredScore": 1600,
@@ -154,7 +154,7 @@
       {
         "level": 16,
         "difficulty": "expert",
-        "timeLimit": 120,
+        "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 4, "max": 8 },
         "requiredScore": 3000,

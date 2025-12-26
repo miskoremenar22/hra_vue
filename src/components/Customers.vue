@@ -5,6 +5,9 @@
       ref="customerEl"
       :style="{ transform: `translateX(${x - queueIndex * 150}px)` }"
     >
+      <div v-if="mood" class="mood-bubble">
+        {{ moodEmoji }}
+      </div>
       <div v-if="message" class="order-bubble">
         <strong>{{ message }}</strong>
       </div>
@@ -20,7 +23,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, defineExpose } from 'vue'
+import { ref, computed, onMounted, onUnmounted, defineExpose } from 'vue'
 import customerSprite from '@/assets/customers/customer.svg'
 
 const props = defineProps({
@@ -35,7 +38,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['order-ready'])
+const emit = defineEmits(['order-ready', 'left'])
 
 /* =====================
    STAVY
@@ -45,6 +48,7 @@ const arrived = ref(false)
 const message = ref(null)
 const order = ref(null)
 const customerEl = ref(null)
+const served = ref(false)
 
 /* =====================
    ANIMÁCIA
@@ -83,8 +87,12 @@ const animate = (ts) => {
     if (phase.value === 'enter') {
       arrived.value = true
       generateOrder()
+      startPatience()
+    } else {
+      emit('left')
     }
   }
+
 }
 
 /* =====================
@@ -99,13 +107,55 @@ const leave = () => {
   requestAnimationFrame(animate)
 }
 
-const react = (text) => {
-  message.value = text
+const mood = ref(null) // 'happy' | 'neutral' | 'angry'
+const react = (type) => {
+  if (served.value) return // ❌ už obslúžený
+
+  served.value = true      // ✅ zamkni zákazníka
+  clearPatience()
+  mood.value = type
+
   setTimeout(() => {
-    message.value = null
+    mood.value = null
     leave()
-  }, 1300)
+  }, 2000)
 }
+
+const moodEmoji = computed(() => {
+  if (mood.value === 'happy') return '😄'
+  if (mood.value === 'neutral') return '😐'
+  if (mood.value === 'angry') return '😠'
+  return ''
+})
+
+let t1 = null
+let t2 = null
+let t3 = null
+
+const startPatience = () => {
+  mood.value = 'happy'
+
+  t1 = setTimeout(() => {
+    mood.value = 'neutral'
+  }, 15000) // 🙂 → 😐 po 10s
+
+  t2 = setTimeout(() => {
+    mood.value = 'angry'
+  }, 30000) // 😐 → 😠 po 20 s
+
+  t3 = setTimeout(() => {
+    if (mood.value === 'angry' && arrived.value) {
+      leave()
+    }
+  }, 45000) // ODCHOD PO 30s
+}
+
+const clearPatience = () => {
+  clearTimeout(t1)
+  clearTimeout(t2)
+  clearTimeout(t3)
+}
+
 
 /* =====================
    RESIZE
@@ -164,5 +214,18 @@ onUnmounted(() => {
   font-size: clamp(0.8rem, 1.2vw, 1rem);
   white-space: nowrap;
   margin-bottom: 6px;
+}
+.mood-bubble {
+  position: absolute;
+  bottom: 150%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 32px;
+  animation: pop 0.3s ease;
+}
+
+@keyframes pop {
+  0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 </style>

@@ -1,43 +1,110 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue'
+import { getCuisineProgress } from '@/utils/progress'
 
-const emit = defineEmits(['select-level', 'back']);
+const emit = defineEmits(['select-level', 'back'])
 
-const currentSection = ref(0);
+const currentSection = ref(0)
 
 const cuisines = [
-  { name: 'Ázijská kuchyňa', icon: '🏮', color: '#e53935', levels: [1, 2, 3, 4] },
-  { name: 'Mexická kuchyňa', icon: '🌵', color: '#43a047', levels: [5, 6, 7, 8] },
-  { name: 'Talianska kuchyňa', icon: '🍕', color: '#fdd835', levels: [9, 10, 11, 12] },
-  { name: 'Americký Fast Food', icon: '🍔', color: '#1e88e5', levels: [13, 14, 15, 16] }
-];
+  { key: 'asian', name: 'Ázijská kuchyňa', icon: '🏮', color: '#e53935', levels: [1, 2, 3, 4] },
+  { key: 'mexican', name: 'Mexická kuchyňa', icon: '🌵', color: '#43a047', levels: [5, 6, 7, 8] },
+  { key: 'italian', name: 'Talianska kuchyňa', icon: '🍕', color: '#fdd835', levels: [9, 10, 11, 12] },
+  { key: 'american', name: 'Americký Fast Food', icon: '🍔', color: '#1e88e5', levels: [13, 14, 15, 16] }
+]
 
 const nextSection = () => {
-  if (currentSection.value < cuisines.length - 1) currentSection.value++;
-};
+  if (currentSection.value < cuisines.length - 1) currentSection.value++
+}
 
 const prevSection = () => {
-  if (currentSection.value > 0) currentSection.value--;
-};
+  if (currentSection.value > 0) currentSection.value--
+}
+
+const currentCuisine = computed(() => cuisines[currentSection.value])
+
+/**
+ * Progress pre aktuálnu kuchyňu
+ * { unlocked: 1..5, stars: {1:0..3,2:..} }
+ */
+const progress = computed(() => getCuisineProgress(currentCuisine.value.key))
+
+/**
+ * Je kuchyňa odomknutá?
+ * - asian vždy odomknutá
+ * - ostatné iba ak predchádzajúca kuchyňa má dokončené 4 levely (unlocked > 4)
+ */
+const isCuisineUnlocked = (cuisineKey) => {
+  const idx = cuisines.findIndex(c => c.key === cuisineKey)
+  if (idx <= 0) return true // asian vždy
+
+  const prevKey = cuisines[idx - 1].key
+  const prevProg = getCuisineProgress(prevKey)
+
+  return prevProg.unlocked > 4
+}
+
+/**
+ * Je level odomknutý v rámci kuchyne? (1..4)
+ */
+const isLevelUnlocked = (localLevel) => {
+  return localLevel <= (progress.value?.unlocked || 1)
+}
+
+/**
+ * Klik na level:
+ * localLevel 1..4 -> globálny levelId podľa cuisines[current].levels
+ */
+const selectLevel = (localLevel) => {
+  if (!isCuisineUnlocked(currentCuisine.value.key)) return
+  if (!isLevelUnlocked(localLevel)) return
+
+  const globalLevelId = currentCuisine.value.levels[localLevel - 1]
+  emit('select-level', globalLevelId)
+}
 </script>
 
 <template>
-  <div class="levels-container" :style="{ backgroundColor: cuisines[currentSection].color + '22' }">
+  <div
+    class="levels-container"
+    :style="{ backgroundColor: currentCuisine.color + '22' }"
+  >
     <button class="back-home" @click="emit('back')">🏠 Domov</button>
 
     <div class="carousel">
-      <div class="cuisine-card">
-        <div class="icon">{{ cuisines[currentSection].icon }}</div>
-        <h2>{{ cuisines[currentSection].name }}</h2>
-        
-        <div class="levels-grid">
-          <button 
-            v-for="lvl in cuisines[currentSection].levels" 
-            :key="lvl"
-            @click="emit('select-level', lvl)"
+      <div
+        class="cuisine-card"
+        :class="{ locked: !isCuisineUnlocked(currentCuisine.key) }"
+      >
+        <div class="icon">{{ currentCuisine.icon }}</div>
+        <h2>{{ currentCuisine.name }}</h2>
+
+        <!-- 🔒 Zamknutá kuchyňa -->
+        <div
+          v-if="!isCuisineUnlocked(currentCuisine.key)"
+          class="locked-cuisine"
+        >
+          🔒 Dokonči predchádzajúcu krajinu
+        </div>
+
+        <!-- 🔓 Odomknutá kuchyňa -->
+        <div v-else class="levels-grid">
+          <button
+            v-for="localLvl in [1,2,3,4]"
+            :key="localLvl"
             class="level-btn"
+            :disabled="!isLevelUnlocked(localLvl)"
+            @click="selectLevel(localLvl)"
           >
-            Level {{ lvl }}
+            Level {{ localLvl }}
+
+            <span v-if="!isLevelUnlocked(localLvl)">🔒</span>
+
+            <span v-else class="stars">
+              <span v-for="i in 3" :key="i" class="star">
+                {{ i <= (progress.stars?.[localLvl] || 0) ? '★' : '☆' }}
+              </span>
+            </span>
           </button>
         </div>
       </div>
@@ -45,9 +112,15 @@ const prevSection = () => {
 
     <div class="navigation">
       <button @click="prevSection" :disabled="currentSection === 0" class="nav-btn">←</button>
+
       <span class="dots">
-        <span v-for="(c, i) in cuisines" :key="i" :class="{ active: i === currentSection }"></span>
+        <span
+          v-for="(c, i) in cuisines"
+          :key="c.key"
+          :class="{ active: i === currentSection }"
+        ></span>
       </span>
+
       <button @click="nextSection" :disabled="currentSection === cuisines.length - 1" class="nav-btn">→</button>
     </div>
   </div>
@@ -80,6 +153,18 @@ const prevSection = () => {
   width: 350px;
 }
 
+.cuisine-card.locked {
+  opacity: 0.75;
+}
+
+.locked-cuisine {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.07);
+  font-weight: bold;
+}
+
 .icon { font-size: 60px; }
 
 .levels-grid {
@@ -99,6 +184,19 @@ const prevSection = () => {
 }
 
 .level-btn:hover { background: #333; color: white; }
+
+.level-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stars {
+  margin-left: 8px;
+}
+
+.star {
+  font-size: 14px;
+}
 
 .navigation {
   margin-top: 30px;

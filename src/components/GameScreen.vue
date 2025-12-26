@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import gameData from '../data/gameData.json'
 import levels from '@/data/levels.json'
 
@@ -13,15 +13,38 @@ import bgMexican from '../assets/backgrounds/bg-mexican.jpg'
 import bgItalian from '../assets/backgrounds/bg-italian.jpg'
 import bgAmerican from '../assets/backgrounds/bg-american.png'
 
+import { updateLevelResult } from '@/utils/progress'
 import trayImg from '../assets/restaurant/tray.svg'
 
 const props = defineProps(['levelId', 'cuisineType'])
 const emit = defineEmits(['back'])
 
 /* =====================
+   UKONČENIE LEVELU
+===================== */
+const levelEnded = ref(false)
+
+const endLevel = () => {
+  if (levelEnded.value) return
+  levelEnded.value = true
+
+  // 🔑 globálny → lokálny level
+  const localLevel = ((props.levelId - 1) % 4) + 1
+
+  updateLevelResult(
+    props.cuisineType, // 'asian'
+    localLevel,        // 1–4
+    stars.value
+  )
+
+  setTimeout(() => {
+    emit('back')
+  }, 1500)
+}
+
+/* =====================
    LEVEL CONFIG
 ===================== */
-
 const cuisineLevels = computed(() => {
   return levels[props.cuisineType]?.levels || []
 })
@@ -39,7 +62,6 @@ const allowedRecipeIds = computed(() => {
 /* =====================
    DATA Z KUCHYNE
 ===================== */
-
 const cuisineData = computed(() => gameData[props.cuisineType])
 
 const allowedRecipes = computed(() => {
@@ -62,7 +84,6 @@ const getIcon = (n) => ingredientIcons[n] || '📦'
 /* =====================
    STAVY HRY
 ===================== */
-
 const onPlate = ref([])
 const score = ref(0)
 
@@ -72,25 +93,21 @@ const cookProgress = ref(0)
 /* =====================
    INGREDIENCIE
 ===================== */
-
 const plateRef = ref(null)
 
 const handleIngredientSelect = (ing) => {
+  if (levelEnded.value) return
   if (!cooking.value && onPlate.value.length < 6) {
     onPlate.value.push(ing)
   }
 }
 
-/* =====================
-   INGREDIENCIE
-===================== */
 const handleDropIngredient = ({ ingredient, x, y }) => {
-  if (cooking.value || !plateRef.value) return
+  if (levelEnded.value || cooking.value || !plateRef.value) return
   const r = plateRef.value.getBoundingClientRect()
 
   if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
     if (onPlate.value.length < 6) {
-      // VYPRACOVANIE PERCENTUÁLNEJ POZÍCIE
       const posX = ((x - r.left) / r.width) * 100
       const posY = ((y - r.top) / r.height) * 100
       
@@ -106,7 +123,6 @@ const handleDropIngredient = ({ ingredient, x, y }) => {
 /* =====================
    VARENIE
 ===================== */
-
 const COOK_TIME = 5000
 let cookRAF = null
 
@@ -118,7 +134,7 @@ const sameIngredients = (a, b) => {
 const servedMeals = ref([])
 
 const servePlate = () => {
-  if (cooking.value || onPlate.value.length === 0) return
+  if (levelEnded.value || cooking.value || onPlate.value.length === 0) return
 
   cooking.value = true
   cookProgress.value = 0
@@ -136,15 +152,11 @@ const servePlate = () => {
   cookRAF = requestAnimationFrame(tick)
 }
 
-/* =====================
-   UPRAVENÉ POROVNANIE RECEPTU
-===================== */
-// Keďže onPlate má teraz objekty, musíme z nich pre porovnanie vytiahnuť len mená
 const finishCooking = () => {
   cooking.value = false
   cookProgress.value = 0
 
-  const ingredientNamesOnPlate = onPlate.value.map(item => item.name)
+  const ingredientNamesOnPlate = onPlate.value.map(i => i.name)
 
   const found = allowedRecipes.value.find(r =>
     sameIngredients(ingredientNamesOnPlate, r.ingredients)
@@ -168,7 +180,6 @@ const finishCooking = () => {
 /* =====================
    ZÁKAZNÍCI
 ===================== */
-
 const customers = ref([])
 const customerRefs = ref({})
 const customerOrders = ref({})
@@ -176,7 +187,7 @@ const customerOrders = ref({})
 let spawnTimer = null
 
 const spawnCustomer = () => {
-  if (!currentLevelConfig.value) return
+  if (levelEnded.value || !currentLevelConfig.value) return
   if (customers.value.length >= currentLevelConfig.value.maxCustomers) return
 
   customers.value.push({
@@ -186,7 +197,7 @@ const spawnCustomer = () => {
 }
 
 const scheduleNextCustomer = () => {
-  if (!currentLevelConfig.value) return
+  if (levelEnded.value || !currentLevelConfig.value) return
 
   const { min, max } = currentLevelConfig.value.spawnInterval
   const delay = (min + Math.random() * (max - min)) * 1000
@@ -197,13 +208,27 @@ const scheduleNextCustomer = () => {
   }, delay)
 }
 
+const removeCustomer = (id) => {
+  // odstráni zákazníka z fronty
+  customers.value = customers.value.filter(c => c.id !== id)
+
+  // vyčistí referencie
+  delete customerOrders.value[id]
+  delete customerRefs.value[id]
+
+  // ⏭️ POKRAČUJ V SPAWNE
+  if (!levelEnded.value) {
+    scheduleNextCustomer()
+  }
+}
+
 /* =====================
    DRAG & DROP TÁCKY
 ===================== */
-
 const draggedMeal = ref(null)
 
 const startDragServed = (meal, e) => {
+  if (levelEnded.value) return
   draggedMeal.value = meal
   meal.dragging = true
 
@@ -240,32 +265,24 @@ const dropDrag = (e) => {
   })
 
   if (!hitCustomer) {
-    meal.x = null
-    meal.y = null
     draggedMeal.value = null
     return
   }
 
   const order = customerOrders.value[hitCustomer.id]
   const comp = customerRefs.value[hitCustomer.id]
+  if (!comp || !order) return
 
-  if (meal.name === order.name) {
+  if (meal.correct && meal.name === order.name) {
     score.value += meal.points
-    comp.react(`Ďakujem! +${meal.points}`)
+    comp.react('happy')
   } else {
-    comp.react('NIE TO SOM CHCEL!')
+    comp.react('angry')
   }
 
   servedMeals.value = servedMeals.value.filter(m => m.id !== meal.id)
-
-  setTimeout(() => {
-    customers.value = customers.value.filter(c => c.id !== hitCustomer.id)
-    delete customerOrders.value[hitCustomer.id]
-  }, 1500)
-
   draggedMeal.value = null
 }
-
 
 /* =====================
    TIMER
@@ -277,25 +294,19 @@ onMounted(() => {
   if (currentLevelConfig.value) {
     timeLeft.value = currentLevelConfig.value.timeLimit
     startTimer()
+    scheduleNextCustomer()
   }
 })
 
 const startTimer = () => {
   clearInterval(timerInterval)
-
   timerInterval = setInterval(() => {
-    if (timeLeft.value > 0) {
-      timeLeft.value--
-    } else {
+    if (timeLeft.value > 0) timeLeft.value--
+    else {
       clearInterval(timerInterval)
-      onTimeUp()
+      endLevel()
     }
   }, 1000)
-}
-
-const onTimeUp = () => {
-  // 🔴 tu neskôr dáme end-screen
-  console.log('TIME UP')
 }
 
 const timeProgress = computed(() => {
@@ -309,51 +320,31 @@ const formattedTime = computed(() => {
   return `${min}:${sec.toString().padStart(2, '0')}`
 })
 
-import { watch } from 'vue'
-
-watch(timeLeft, (val) => {
-  if (val === 10) {
-    // ⚠️ posledných 10 sekúnd
-    console.log('POSLEDNÝCH 10 SEKÚND')
-
-    // sem neskôr:
-    // - zmeniť farbu timeru
-    // - spustiť zvuk
-    // - rozblikať bar
-  }
-
-  if (val === 0) {
-    console.log('ČAS VYPRŠAL')
-  }
-})
-
-
-
 /* =====================
    LEVEL PROGRESS
 ===================== */
 const levelProgress = computed(() => {
   if (!currentLevelConfig.value) return 0
-
   const max = currentLevelConfig.value.requiredScore * 1.6
   return Math.min(100, (score.value / max) * 100)
 })
 
 const stars = computed(() => {
   if (!currentLevelConfig.value) return 0
-
   const base = currentLevelConfig.value.requiredScore
-
   if (score.value >= base * 1.6) return 3
   if (score.value >= base * 1.3) return 2
   if (score.value >= base) return 1
   return 0
 })
 
+watch(stars, (val) => {
+  if (val >= 3) endLevel()
+})
+
 /* =====================
    POZADIE
 ===================== */
-
 const backgrounds = {
   asian: bgAsian,
   mexican: bgMexican,
@@ -367,22 +358,13 @@ const backgroundStyle = computed(() => ({
   backgroundPosition: 'center'
 }))
 
-onMounted(() => {
-  if (currentLevelConfig.value) {
-    scheduleNextCustomer()
-  }
-})
-
 onUnmounted(() => {
   if (spawnTimer) clearTimeout(spawnTimer)
   if (cookRAF) cancelAnimationFrame(cookRAF)
-})
-
-onUnmounted(() => {
   clearInterval(timerInterval)
 })
-
 </script>
+
 
 
 <template>
@@ -439,6 +421,7 @@ onUnmounted(() => {
         :queueIndex="i"
         :allowedRecipes="allowedRecipes"
         @order-ready="order => customerOrders[c.id] = order"
+        @left="removeCustomer(c.id)"
       />
     </div>
 
