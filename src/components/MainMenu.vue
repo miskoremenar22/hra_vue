@@ -22,7 +22,7 @@ const emit = defineEmits(['start-game', 'show-stats']);
       </div>
 
       <h1 class="title">
-        <span class="title-sub">Virtual</span>
+        <!--<span class="title-sub">Virtual</span> -->
         Master Chef
         <span class="title-dot">.</span>
       </h1>
