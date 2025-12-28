@@ -1,7 +1,27 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, defineExpose } from 'vue'
-import customerSprite from '@/assets/customers/customer.svg'
 
+/* =====================
+   RANDOM SKINY
+===================== */
+const SKINS = [
+  'customer1.svg',
+  'customer2.svg',
+  'customer3.svg',
+  'customer4.svg',
+  'customer5.svg',
+  'customer6.svg'
+]
+
+const selectedSkin = SKINS[Math.floor(Math.random() * SKINS.length)]
+
+const customerSprite = computed(() =>
+  new URL(`../assets/customers/${selectedSkin}`, import.meta.url).href
+)
+
+/* =====================
+   PROPS
+===================== */
 const props = defineProps({
   cuisine: String,
   allowedRecipes: {
@@ -12,13 +32,13 @@ const props = defineProps({
     type: Number,
     default: 0
   },
-  isPaused: { // 👈 Dôležité pre pauzu
+  isPaused: {
     type: Boolean,
     default: false
   }
 })
 
-const emit = defineEmits(['order-ready', 'left'])
+const emit = defineEmits(['order-ready', 'left', 'left-complete'])
 
 /* =====================
    STAVY
@@ -37,8 +57,8 @@ const mood = ref(null)
 let startX = 0
 let targetX = 0
 let lastTimestamp = 0
-let accumulatedAnimationTime = 0 
-let accumulatedPatienceTime = 0  
+let accumulatedAnimationTime = 0
+let accumulatedPatienceTime = 0
 
 const DURATION = 9000
 const phase = ref('enter') // enter | leave
@@ -46,7 +66,7 @@ const phase = ref('enter') // enter | leave
 const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3)
 
 /* =====================
-   TRPEZLIVOSŤ (Pauzovateľná)
+   TRPEZLIVOSŤ
 ===================== */
 const checkPatience = (delta) => {
   if (served.value || !arrived.value) return
@@ -70,13 +90,11 @@ const animate = (ts) => {
   const delta = ts - lastTimestamp
   lastTimestamp = ts
 
-  // AK JE PAUZA, STOJÍME
   if (props.isPaused) {
     requestAnimationFrame(animate)
     return
   }
 
-  // Ak nie je pauza, počítame progres
   accumulatedAnimationTime += delta
   const t = Math.min(accumulatedAnimationTime / DURATION, 1)
 
@@ -87,15 +105,16 @@ const animate = (ts) => {
   }
 
   if (t < 1) {
-    requestAnimationFrame(animate)
+  requestAnimationFrame(animate)
   } else {
     if (phase.value === 'enter' && !arrived.value) {
       arrived.value = true
       mood.value = 'happy'
       generateOrder()
-      requestAnimationFrame(animate) 
+      requestAnimationFrame(animate)
     } else if (phase.value === 'leave') {
-      emit('left')
+      // 🔥 KONIEC ANIMÁCIE ODCHODU
+      emit('left-complete')
     } else {
       requestAnimationFrame(animate)
     }
@@ -114,6 +133,10 @@ const generateOrder = () => {
 
 const leave = () => {
   if (phase.value === 'leave') return
+
+  // 🔥 LOGICKÝ ODCHOD OKAMŽITE
+  emit('left')
+
   arrived.value = false
   phase.value = 'leave'
   accumulatedAnimationTime = 0
@@ -122,8 +145,8 @@ const leave = () => {
 }
 
 const react = (type) => {
-  if (served.value) return 
-  served.value = true      
+  if (served.value) return
+  served.value = true
   mood.value = type
 
   setTimeout(() => {
@@ -139,10 +162,13 @@ const moodEmoji = computed(() => {
   return ''
 })
 
+/* =====================
+   RESIZE
+===================== */
 const recalc = () => {
   const vw = window.innerWidth
   startX = -vw * 0.6
-  targetX = vw * 0.09
+  targetX = vw * 0.12
 }
 
 defineExpose({
@@ -163,39 +189,52 @@ onUnmounted(() => {
 })
 </script>
 
-
 <template>
   <div class="customer-wrapper">
-    <div
-      class="customer"
-      ref="customerEl"
-      :style="{ transform: `translateX(${x - queueIndex * 150}px)` }"
-    >
-      <div v-if="mood" class="mood-bubble">
-        {{ moodEmoji }}
-      </div>
-      <div v-if="message" class="order-bubble">
-        <strong>{{ message }}</strong>
-      </div>
+    <!-- POHYB ZÁKAZNÍKA -->
+    <div class="customer" :style="{ transform: `translateX(${x}px)` }">
+      <!-- POHYB FRONTY -->
+      <div
+        class="queue-offset"
+        ref="customerEl"
+        :style="{ transform: `translateX(${-queueIndex * 150}px)` }"
+      >
+        <div v-if="mood" class="mood-bubble">
+          {{ moodEmoji }}
+        </div>
 
-      <div v-else-if="arrived && order" class="order-bubble">
-        Prosím si:<br />
-        <strong>{{ order.name }}</strong>
-      </div>
+        <div v-if="message" class="order-bubble">
+          <strong>{{ message }}</strong>
+        </div>
 
-      <img :src="customerSprite" />
+        <div v-else-if="arrived && order" class="order-bubble">
+          Prosím si:<br />
+          <strong>{{ order.name }}</strong>
+        </div>
+
+        <img :src="customerSprite" />
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* VRÁTENÉ PÔVODNÉ CSS */
 .customer-wrapper {
   position: absolute;
   bottom: 54%;
   left: 50%;
   transform: translateX(-50%);
   pointer-events: none;
+}
+
+/* pohyb zákazníka */
+.customer {
+  will-change: transform;
+}
+
+/* 🔥 PLYNULÝ POSUN FRONTY */
+.queue-offset {
+  transition: transform 2.5s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .customer img {
@@ -229,4 +268,14 @@ onUnmounted(() => {
   0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
   100% { transform: translateX(-50%) scale(1); opacity: 1; }
 }
+
+/* TABLET & MOBILE – IBA POSUN HORE */
+@media (max-width: 1000px) {
+  .customer-wrapper {
+    bottom: 59%;
+  }
+}
+
+
+
 </style>

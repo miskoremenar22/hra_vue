@@ -236,7 +236,8 @@ const spawnCustomer = () => {
 
   customers.value.push({
     id: Date.now() + Math.random(),
-    cuisine: props.cuisineType
+    cuisine: props.cuisineType,
+    leaving: false
   })
 }
 
@@ -254,10 +255,21 @@ const scheduleNextCustomer = () => {
 }
 
 const removeCustomer = (id) => {
+  const customer = customers.value.find(c => c.id === id)
+  if (!customer) return
+
+  // 🔥 vyradíme z fronty OKAMŽITE
+  customer.leaving = true
+}
+
+const getQueueIndex = (customer) => {
+  return customers.value
+    .filter(c => !c.leaving)
+    .indexOf(customer)
+}
+
+const destroyCustomer = (id) => {
   customers.value = customers.value.filter(c => c.id !== id)
-  delete customerOrders.value[id]
-  delete customerRefs.value[id]
-  if (!levelEnded.value) scheduleNextCustomer()
 }
 
 /* =========================================
@@ -412,11 +424,12 @@ onUnmounted(() => {
         :key="c.id"
         :ref="el => customerRefs[c.id] = el"
         :cuisine="c.cuisine"
-        :queueIndex="i"
+        :queueIndex="getQueueIndex(c)"
         :allowedRecipes="allowedRecipes"
         :is-paused="isPaused" 
         @order-ready="order => customerOrders[c.id] = order"
         @left="removeCustomer(c.id)"
+        @left-complete="destroyCustomer(c.id)"
       />
     </div>
 

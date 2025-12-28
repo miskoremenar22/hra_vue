@@ -4,7 +4,7 @@
       {
         "level": 1,
         "difficulty": "easy",
-        "timeLimit": 18,
+        "timeLimit": 180,
         "maxCustomers": 2,
         "spawnInterval": { "min": 8, "max": 15 },
         "requiredScore": 300,
