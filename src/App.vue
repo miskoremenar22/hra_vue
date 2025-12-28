@@ -39,9 +39,10 @@ const startLevel = (levelId) => {
 
   <GameScreen
     v-else-if="currentScreen === 'game'"
-    :levelId="selectedLevel"
-    :cuisineType="currentCuisine"
-    @back="currentScreen = 'levels'"
+  :levelId="selectedLevel"
+  :cuisineType="currentCuisine"
+  @back="currentScreen = 'levels'"
+  @backToLevels="currentScreen = 'levels'"  @backToMain="currentScreen = 'menu'"      
   />
 
   <StatsModal v-if="isStatsOpen" @close="isStatsOpen = false" />

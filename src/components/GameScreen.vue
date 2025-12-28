@@ -3,307 +3,122 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import gameData from '../data/gameData.json'
 import levels from '@/data/levels.json'
 
+// Komponenty
 import IngredientsMenu from './IngredientsMenu.vue'
 import RecipesMenu from './RecipesMenu.vue'
 import Customer from './Customers.vue'
-import { ingredientIcons } from '../utils/icons'
+import PauseMenu from './PauseMenu.vue' // Pridaný import
 
+// Utility a aktíva
+import { ingredientIcons } from '../utils/icons'
+import { updateLevelResult } from '@/utils/progress'
 import bgAsian from '../assets/backgrounds/bg-asian.png'
 import bgMexican from '../assets/backgrounds/bg-mexican.png'
 import bgItalian from '../assets/backgrounds/bg-italian.png'
 import bgAmerican from '../assets/backgrounds/bg-american.png'
-
-import { updateLevelResult } from '@/utils/progress'
 import trayImg from '../assets/restaurant/tray.svg'
 import tackaImg from '../assets/restaurant/tacka_hranata.png'
 
-const props = defineProps(['levelId', 'cuisineType'])
-const emit = defineEmits(['back'])
+import GameOverMenu from './GameOverMenu.vue'
 
-/* =====================
-   UKONČENIE LEVELU
-===================== */
+const props = defineProps(['levelId', 'cuisineType'])
+const emit = defineEmits(['back', 'backToMain', 'backToLevels'])
+
+/* =========================================
+   1. ZÁKLADNÉ STAVY HRY (Score, Pause, End)
+   ========================================= */
+const score = ref(0)
 const levelEnded = ref(false)
+const isPaused = ref(false) // Stav pauzy
+const servedTotalCount = ref(0)
 
 const endLevel = () => {
   if (levelEnded.value) return
   levelEnded.value = true
+  clearInterval(timerInterval)
 
-  // 🔑 globálny → lokálny level
+  // Prepočet na lokálny level (1-4)
   const localLevel = ((props.levelId - 1) % 4) + 1
 
   updateLevelResult(
-    props.cuisineType, // 'asian'
-    localLevel,        // 1–4
+    props.cuisineType,
+    localLevel,
     stars.value
   )
-
-  setTimeout(() => {
-    emit('back')
-  }, 1500)
 }
 
-/* =====================
-   LEVEL CONFIG
-===================== */
-const cuisineLevels = computed(() => {
-  return levels[props.cuisineType]?.levels || []
-})
-
-const currentLevelConfig = computed(() => {
-  return cuisineLevels.value.find(l => l.level === props.levelId)
-})
-
-const allowedRecipeIds = computed(() => {
-  return cuisineLevels.value
-    .filter(l => l.level <= props.levelId)
-    .flatMap(l => l.recipes)
-})
-
-/* =====================
-   DATA Z KUCHYNE
-===================== */
-const cuisineData = computed(() => gameData[props.cuisineType])
-
-const allowedRecipes = computed(() => {
-  if (!cuisineData.value) return []
-  return cuisineData.value.recipes.filter(r =>
-    allowedRecipeIds.value.includes(r.id)
-  )
-})
-
-const allowedIngredients = computed(() => {
-  const set = new Set()
-  allowedRecipes.value.forEach(r =>
-    r.ingredients.forEach(i => set.add(i))
-  )
-  return Array.from(set)
-})
-
-const getIcon = (n) => ingredientIcons[n] || '📦'
-
-/* =====================
-   STAVY HRY
-===================== */
-const onPlate = ref([])
-const score = ref(0)
-
-const cooking = ref(false)
-const cookProgress = ref(0)
-
-/* =====================
-   INGREDIENCIE
-===================== */
-const plateRef = ref(null)
-
-const handleIngredientSelect = (ing) => {
-  if (levelEnded.value) return
-  if (!cooking.value && onPlate.value.length < 6) {
-    onPlate.value.push(ing)
-  }
-}
-
-const handleDropIngredient = ({ ingredient, x, y }) => {
-  if (levelEnded.value || cooking.value || !plateRef.value) return
-  const r = plateRef.value.getBoundingClientRect()
-
-  if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
-    if (onPlate.value.length < 6) {
-      const posX = ((x - r.left) / r.width) * 100
-      const posY = ((y - r.top) / r.height) * 100
-      
-      onPlate.value.push({
-        name: ingredient,
-        x: posX,
-        y: posY
-      })
-    }
-  }
-}
-
-/* =====================
-   VARENIE
-===================== */
-const COOK_TIME = 5000
-let cookRAF = null
-
-const sameIngredients = (a, b) => {
-  if (!a || !b || a.length !== b.length) return false
-  return [...a].sort().every((v, i) => v === [...b].sort()[i])
-}
-
-const servedMeals = ref([])
-
-const servePlate = () => {
-  if (levelEnded.value || cooking.value || onPlate.value.length === 0) return
-
-  cooking.value = true
-  cookProgress.value = 0
-  const start = performance.now()
-
-  const tick = (now) => {
-    cookProgress.value = Math.min(100, ((now - start) / COOK_TIME) * 100)
-    if (now - start < COOK_TIME) {
-      cookRAF = requestAnimationFrame(tick)
-    } else {
-      finishCooking()
-    }
-  }
-
-  cookRAF = requestAnimationFrame(tick)
-}
-
-const finishCooking = () => {
+// Funkcia pre REŠTART levelu
+const handleRetry = () => {
+  // Vyčistenie hernej plochy
+  score.value = 0
+  servedTotalCount.value = 0
+  onPlate.value = []
+  servedMeals.value = []
+  customers.value = []
+  customerOrders.value = {}
+  
+  // Reset varenia
   cooking.value = false
   cookProgress.value = 0
+  if (cookRAF) cancelAnimationFrame(cookRAF)
 
-  const ingredientNamesOnPlate = onPlate.value.map(i => i.name)
-
-  const found = allowedRecipes.value.find(r =>
-    sameIngredients(ingredientNamesOnPlate, r.ingredients)
-  )
-
-  servedMeals.value.push({
-    id: Date.now() + Math.random(),
-    name: found ? found.name : 'Nepodarené jedlo',
-    correct: !!found,
-    points: found?.points || 0,
-    x: null,
-    y: null,
-    dragging: false,
-    offsetX: 0,
-    offsetY: 0
-  })
-
-  onPlate.value = []
-}
-
-/* =====================
-   ZÁKAZNÍCI
-===================== */
-const customers = ref([])
-const customerRefs = ref({})
-const customerOrders = ref({})
-
-let spawnTimer = null
-
-const spawnCustomer = () => {
-  if (levelEnded.value || !currentLevelConfig.value) return
-  if (customers.value.length >= currentLevelConfig.value.maxCustomers) return
-
-  customers.value.push({
-    id: Date.now() + Math.random(),
-    cuisine: props.cuisineType
-  })
-}
-
-const scheduleNextCustomer = () => {
-  if (levelEnded.value || !currentLevelConfig.value) return
-
-  const { min, max } = currentLevelConfig.value.spawnInterval
-  const delay = (min + Math.random() * (max - min)) * 1000
-
-  spawnTimer = setTimeout(() => {
-    spawnCustomer()
-    scheduleNextCustomer()
-  }, delay)
-}
-
-const removeCustomer = (id) => {
-  // odstráni zákazníka z fronty
-  customers.value = customers.value.filter(c => c.id !== id)
-
-  // vyčistí referencie
-  delete customerOrders.value[id]
-  delete customerRefs.value[id]
-
-  // ⏭️ POKRAČUJ V SPAWNE
-  if (!levelEnded.value) {
-    scheduleNextCustomer()
-  }
-}
-
-/* =====================
-   DRAG & DROP TÁCKY
-===================== */
-const draggedMeal = ref(null)
-
-const startDragServed = (meal, e) => {
-  if (levelEnded.value) return
-  draggedMeal.value = meal
-  meal.dragging = true
-
-  const rect = e.currentTarget.getBoundingClientRect()
-  meal.offsetX = e.clientX - rect.left
-  meal.offsetY = e.clientY - rect.top
-
-  window.addEventListener('mousemove', moveDrag)
-  window.addEventListener('mouseup', dropDrag)
-}
-
-const moveDrag = (e) => {
-  if (!draggedMeal.value) return
-  draggedMeal.value.x = e.clientX - draggedMeal.value.offsetX
-  draggedMeal.value.y = e.clientY - draggedMeal.value.offsetY
-}
-
-const dropDrag = (e) => {
-  window.removeEventListener('mousemove', moveDrag)
-  window.removeEventListener('mouseup', dropDrag)
-
-  const meal = draggedMeal.value
-  if (!meal) return
-  meal.dragging = false
-
-  const hitCustomer = customers.value.find(c => {
-    const comp = customerRefs.value[c.id]
-    const r = comp?.getRect?.()
-    return r &&
-      e.clientX >= r.left &&
-      e.clientX <= r.right &&
-      e.clientY >= r.top &&
-      e.clientY <= r.bottom
-  })
-
-  if (!hitCustomer) {
-    draggedMeal.value = null
-    return
-  }
-
-  const order = customerOrders.value[hitCustomer.id]
-  const comp = customerRefs.value[hitCustomer.id]
-  if (!comp || !order) return
-
-  if (meal.correct && meal.name === order.name) {
-    score.value += meal.points
-    comp.react('happy')
-  } else {
-    comp.react('angry')
-  }
-
-  servedMeals.value = servedMeals.value.filter(m => m.id !== meal.id)
-  draggedMeal.value = null
-}
-
-/* =====================
-   TIMER
-===================== */
-const timeLeft = ref(0)
-let timerInterval = null
-
-onMounted(() => {
+  // Reset stavov
+  levelEnded.value = false
+  isPaused.value = false
+  
+  // Reset času a spawn zákazníkov
   if (currentLevelConfig.value) {
     timeLeft.value = currentLevelConfig.value.timeLimit
     startTimer()
     scheduleNextCustomer()
   }
+}
+
+/* =========================================
+   2. KONFIGURÁCIA LEVELU A DÁTA
+   ========================================= */
+const cuisineLevels = computed(() => levels[props.cuisineType]?.levels || [])
+
+const currentLevelConfig = computed(() => 
+  cuisineLevels.value.find(l => l.level === props.levelId)
+)
+
+const allowedRecipeIds = computed(() => 
+  cuisineLevels.value
+    .filter(l => l.level <= props.levelId)
+    .flatMap(l => l.recipes)
+)
+
+const cuisineData = computed(() => gameData[props.cuisineType])
+
+const allowedRecipes = computed(() => {
+  if (!cuisineData.value) return []
+  return cuisineData.value.recipes.filter(r => allowedRecipeIds.value.includes(r.id))
 })
+
+const allowedIngredients = computed(() => {
+  const set = new Set()
+  allowedRecipes.value.forEach(r => r.ingredients.forEach(i => set.add(i)))
+  return Array.from(set)
+})
+
+const getIcon = (n) => ingredientIcons[n] || '📦'
+
+/* =========================================
+   3. ČASOVAČ (TIMER)
+   ========================================= */
+const timeLeft = ref(0)
+let timerInterval = null
 
 const startTimer = () => {
   clearInterval(timerInterval)
   timerInterval = setInterval(() => {
-    if (timeLeft.value > 0) timeLeft.value--
-    else {
+    // Ak je pauza alebo koniec, čas stojí
+    if (isPaused.value || levelEnded.value) return
+
+    if (timeLeft.value > 0) {
+      timeLeft.value--
+    } else {
       clearInterval(timerInterval)
       endLevel()
     }
@@ -321,9 +136,190 @@ const formattedTime = computed(() => {
   return `${min}:${sec.toString().padStart(2, '0')}`
 })
 
-/* =====================
-   LEVEL PROGRESS
-===================== */
+/* =========================================
+   4. TÁCKA A INGREDIENCIE
+   ========================================= */
+const onPlate = ref([])
+const plateRef = ref(null)
+
+const handleIngredientSelect = (ing) => {
+  if (levelEnded.value || isPaused.value || cooking.value) return
+  if (onPlate.value.length < 6) {
+    onPlate.value.push(ing)
+  }
+}
+
+const handleDropIngredient = ({ ingredient, x, y }) => {
+  if (levelEnded.value || isPaused.value || cooking.value || !plateRef.value) return
+  const r = plateRef.value.getBoundingClientRect()
+
+  if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+    if (onPlate.value.length < 6) {
+      const posX = ((x - r.left) / r.width) * 100
+      const posY = ((y - r.top) / r.height) * 100
+      onPlate.value.push({ name: ingredient, x: posX, y: posY })
+    }
+  }
+}
+
+/* =========================================
+   5. SYSTÉM VARENIA (RAF s podporou pauzy)
+   ========================================= */
+const cooking = ref(false)
+const cookProgress = ref(0)
+const COOK_TIME = 5000
+let cookRAF = null
+let cookStartTime = null
+let elapsedOnPause = 0
+
+const sameIngredients = (a, b) => {
+  if (!a || !b || a.length !== b.length) return false
+  return [...a].sort().every((v, i) => v === [...b].sort()[i])
+}
+
+const servedMeals = ref([])
+
+const servePlate = () => {
+  if (levelEnded.value || isPaused.value || cooking.value || onPlate.value.length === 0) return
+
+  cooking.value = true
+  cookProgress.value = 0
+  elapsedOnPause = 0
+  cookStartTime = performance.now()
+
+  const tick = (now) => {
+    if (isPaused.value) {
+      // Počas pauzy posúvame "štartovací čas", aby sme po resume pokračovali tam, kde sme prestali
+      cookStartTime = now - elapsedOnPause
+      cookRAF = requestAnimationFrame(tick)
+      return
+    }
+
+    elapsedOnPause = now - cookStartTime
+    cookProgress.value = Math.min(100, (elapsedOnPause / COOK_TIME) * 100)
+
+    if (elapsedOnPause < COOK_TIME) {
+      cookRAF = requestAnimationFrame(tick)
+    } else {
+      finishCooking()
+    }
+  }
+  cookRAF = requestAnimationFrame(tick)
+}
+
+const finishCooking = () => {
+  cooking.value = false
+  const ingredientNamesOnPlate = onPlate.value.map(i => i.name)
+  const found = allowedRecipes.value.find(r => sameIngredients(ingredientNamesOnPlate, r.ingredients))
+
+  servedMeals.value.push({
+    id: Date.now() + Math.random(),
+    name: found ? found.name : 'Nepodarené jedlo',
+    correct: !!found,
+    points: found?.points || 0,
+    dragging: false
+  })
+  onPlate.value = []
+}
+
+/* =========================================
+   6. ZÁKAZNÍCI
+   ========================================= */
+const customers = ref([])
+const customerRefs = ref({})
+const customerOrders = ref({})
+let spawnTimer = null
+
+const spawnCustomer = () => {
+  if (levelEnded.value || isPaused.value || !currentLevelConfig.value) return
+  if (customers.value.length >= currentLevelConfig.value.maxCustomers) return
+
+  customers.value.push({
+    id: Date.now() + Math.random(),
+    cuisine: props.cuisineType
+  })
+}
+
+const scheduleNextCustomer = () => {
+  if (levelEnded.value || !currentLevelConfig.value) return
+
+  const { min, max } = currentLevelConfig.value.spawnInterval
+  const delay = (min + Math.random() * (max - min)) * 1000
+
+  clearTimeout(spawnTimer)
+  spawnTimer = setTimeout(() => {
+    if (!isPaused.value) spawnCustomer()
+    scheduleNextCustomer()
+  }, delay)
+}
+
+const removeCustomer = (id) => {
+  customers.value = customers.value.filter(c => c.id !== id)
+  delete customerOrders.value[id]
+  delete customerRefs.value[id]
+  if (!levelEnded.value) scheduleNextCustomer()
+}
+
+/* =========================================
+   7. DRAG & DROP JEDLA
+   ========================================= */
+const draggedMeal = ref(null)
+
+const startDragServed = (meal, e) => {
+  if (levelEnded.value || isPaused.value) return
+  draggedMeal.value = meal
+  meal.dragging = true
+
+  const rect = e.currentTarget.getBoundingClientRect()
+  meal.offsetX = e.clientX - rect.left
+  meal.offsetY = e.clientY - rect.top
+
+  window.addEventListener('mousemove', moveDrag)
+  window.addEventListener('mouseup', dropDrag)
+}
+
+const moveDrag = (e) => {
+  if (!draggedMeal.value || isPaused.value) return
+  draggedMeal.value.x = e.clientX - draggedMeal.value.offsetX
+  draggedMeal.value.y = e.clientY - draggedMeal.value.offsetY
+}
+
+const dropDrag = (e) => {
+  window.removeEventListener('mousemove', moveDrag)
+  window.removeEventListener('mouseup', dropDrag)
+
+  const meal = draggedMeal.value
+  if (!meal) return
+  meal.dragging = false
+
+  const hitCustomer = customers.value.find(c => {
+    const comp = customerRefs.value[c.id]
+    const r = comp?.getRect?.()
+    return r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+  })
+
+  if (hitCustomer) {
+    const order = customerOrders.value[hitCustomer.id]
+    const comp = customerRefs.value[hitCustomer.id]
+    if (comp && order) {
+      if (meal.correct && meal.name === order.name) {
+        score.value += meal.points
+
+        servedTotalCount.value++
+
+        comp.react('happy')
+      } else {
+        comp.react('angry')
+      }
+      servedMeals.value = servedMeals.value.filter(m => m.id !== meal.id)
+    }
+  }
+  draggedMeal.value = null
+}
+
+/* =========================================
+   8. PROGRESS A HVIEZDY
+   ========================================= */
 const levelProgress = computed(() => {
   if (!currentLevelConfig.value) return 0
   const max = currentLevelConfig.value.requiredScore * 1.6
@@ -343,21 +339,23 @@ watch(stars, (val) => {
   if (val >= 3) endLevel()
 })
 
-/* =====================
-   POZADIE
-===================== */
-const backgrounds = {
-  asian: bgAsian,
-  mexican: bgMexican,
-  italian: bgItalian,
-  american: bgAmerican
-}
-
+/* =========================================
+   9. VIZUÁL A LIFECYCLE
+   ========================================= */
+const backgrounds = { asian: bgAsian, mexican: bgMexican, italian: bgItalian, american: bgAmerican }
 const backgroundStyle = computed(() => ({
   backgroundImage: `url(${backgrounds[props.cuisineType]})`,
   backgroundSize: 'cover',
   backgroundPosition: 'center'
 }))
+
+onMounted(() => {
+  if (currentLevelConfig.value) {
+    timeLeft.value = currentLevelConfig.value.timeLimit
+    startTimer()
+    scheduleNextCustomer()
+  }
+})
 
 onUnmounted(() => {
   if (spawnTimer) clearTimeout(spawnTimer)
@@ -389,6 +387,18 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <button class="pause-trigger" @click.stop="isPaused = true">
+      ⏸️
+    </button>
+
+    <PauseMenu 
+      v-if="isPaused" 
+      @resume="isPaused = false"
+      @retry="handleRetry"
+      @toLevels="emit('backToLevels')"
+      @toMain="emit('backToMain')"
+    />
+
     <div class="game">
       <div class="timer">
         <div class="timer-bar">
@@ -404,6 +414,7 @@ onUnmounted(() => {
         :cuisine="c.cuisine"
         :queueIndex="i"
         :allowedRecipes="allowedRecipes"
+        :is-paused="isPaused" 
         @order-ready="order => customerOrders[c.id] = order"
         @left="removeCustomer(c.id)"
       />
@@ -446,6 +457,16 @@ onUnmounted(() => {
     />
 
     <RecipesMenu :recipes="allowedRecipes" />
+
+    <GameOverMenu 
+      v-if="levelEnded" 
+      :stars="stars"
+      :score="score"
+      :servedCount="servedTotalCount"
+      @retry="handleRetry"
+      @toLevels="emit('backToLevels')"
+    />
+
   </div>
 </template>
 
@@ -736,5 +757,26 @@ onUnmounted(() => {
   color: white;
 }
 
+.pause-trigger {
+  position: absolute;
+  top: 140px; /* Uprav podľa výšky tvojho HUDu a Timeru */
+  left: 20px;
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid white;
+  border-radius: 12px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.pause-trigger:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
 
 </style>
