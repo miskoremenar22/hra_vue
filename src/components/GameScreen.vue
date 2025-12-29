@@ -422,7 +422,7 @@ onUnmounted(() => {
 <template>
   <div class="game-container" :style="backgroundStyle">
     <div class="hud">
-      <button @click="emit('back')" class="exit-btn">❌ Menu</button>
+      <button class="pause-trigger" @click.stop="isPaused = true">PAUZA</button>
       <div class="level-info">
         Level {{ levelId }} | {{ cuisineType.toUpperCase() }}
       </div>
@@ -440,9 +440,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <button class="pause-trigger" @click.stop="isPaused = true">
-      ⏸️
-    </button>
+    
 
     <PauseMenu 
       v-if="isPaused" 
@@ -554,16 +552,45 @@ onUnmounted(() => {
   z-index: 100;
 }
 
-.exit-btn {
-  background: #e74c3c;
-  border: none;
-  color: white;
-  padding: 6px 15px;
-  border-radius: 8px;
+.pause-trigger {
+  /* Farby ladiace s tvojím dizajnom */
+  background: #f8f5f2; 
+  color: #5d4037;
+  border: 1px solid #efebe9;
+  
+  /* Rozmery a tvar */
+  padding: 8px 18px;
+  border-radius: 15px;
   cursor: pointer;
-  font-weight: bold;
+  
+  /* Typografia */
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  
+  /* 3D efekt */
+  box-shadow: 0 4px 0 #d7ccc8;
+  
+  /* Animácia */
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
+/* HOVER - Identické so sekundárnymi tlačidlami v menu */
+.pause-trigger:hover {
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #d7ccc8;
+}
+
+/* ACTIVE - Zatlačenie pri kliknutí */
+.pause-trigger:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 transparent;
+}
 .level-progress { width: 260px; }
 
 .progress-bar {
@@ -815,26 +842,14 @@ onUnmounted(() => {
   color: white;
 }
 
-.pause-trigger {
-  position: absolute;
-  top: 140px; /* Uprav podľa výšky tvojho HUDu a Timeru */
-  left: 20px;
-  width: 50px;
-  height: 50px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid white;
-  border-radius: 12px;
-  font-size: 1.5rem;
-  cursor: pointer;
-  z-index: 70;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
+
+@media (max-width: 400px) {
+  .pause-trigger {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    border-radius: 12px;
+  }
 }
 
-.pause-trigger:hover {
-  background: rgba(255, 255, 255, 0.4);
-}
 
 </style>

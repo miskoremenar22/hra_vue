@@ -57,7 +57,7 @@ const nextPage = () => {
 </template>
 
 <style scoped>
-.recipes-system { position: absolute; bottom: 20px; right: 30px; z-index: 100; }
+.recipes-system { position: absolute; bottom: 40px; right: 30px; z-index: 100; }
 
 .open-trigger {
   width: 80px; height: 80px; border-radius: 15px; border: 4px solid #fff;
@@ -76,8 +76,8 @@ const nextPage = () => {
   display: flex;
   flex-direction: column;
   position: absolute;
-  bottom: 0;
-  right: 0;
+  bottom: 20px;
+  right: 20px;
   box-shadow: -5px 5px 20px rgba(0,0,0,0.3);
   overflow: hidden; /* Dôležité: aby nič nepretekalo cez zaoblené rohy */
 }

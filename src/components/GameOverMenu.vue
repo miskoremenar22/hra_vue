@@ -34,8 +34,8 @@
       </div>
 
       <div class="action-buttons">
-        <button @click="$emit('retry')" class="btn btn-retry">🔄 Skúsiť znova</button>
-        <button @click="$emit('toLevels')" class="btn btn-menu">📂 Výber levelov</button>
+        <button @click="$emit('retry')" class="btn btn-retry">Skúsiť znova</button>
+        <button @click="$emit('toLevels')" class="btn btn-menu">Výber levelov</button>
       </div>
     </div>
   </div>
@@ -82,134 +82,166 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Pôvodné štýly zostávajú, pridávame/upravujeme len title */
-
+/* 1. POZADIE (Zhodné s PauseMenu) */
 .game-over-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(10px);
+  background-color: rgba(28, 15, 10, 0.6);
+  backdrop-filter: blur(12px) brightness(0.8);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 10000;
+  padding: 15px;
 }
 
+/* 2. KARTA (Zhodná s PauseMenu) */
 .game-over-card {
-  background: #2c3e50;
-  padding: 40px;
-  border-radius: 30px;
-  border: 5px solid #bdc3c7; /* Neutrálny rámik pre prehru */
+  background: #ffffff;
+  padding: 2.5rem 2rem;
+  border-radius: 40px;
+  width: 100%;
+  max-width: 360px;
   text-align: center;
-  color: white;
-  min-width: 350px;
-  animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.3), inset 0 0 0 2px #ffffff;
+  border: 4px solid #f1c40f; /* Zlatý rámik */
+  animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  max-height: 95vh;
+  overflow-y: auto;
 }
 
-/* Zlatý rámik ak hráč vyhral aspoň jednu hviezdu */
-.card-win {
-  border-color: #f1c40f;
+.game-over-card:not(.card-win) { border-color: #d7ccc8; }
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.9) translateY(40px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* 3. NADPIS A HVIEZDY (Zhustené) */
 .title {
-  font-size: 2.5rem;
-  margin-bottom: 20px;
-  text-shadow: 2px 2px 0px #000;
-  transition: color 0.3s;
+  font-size: 1.5rem;
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
-/* FARBY PODĽA ÚSPECHU */
-.title-0 { color: #e74c3c; } /* Červená - Prehra */
-.title-1 { color: #3498db; } /* Modrá - Dobrá */
-.title-2 { color: #2ecc71; } /* Zelená - Skvelá */
-.title-3 { color: #f1c40f; } /* Zlatá - Perfektná */
-
-/* ... Zvyšok tvojich pôvodných štýlov (stars, stats, buttons) ... */
-
-@keyframes slideIn {
-  from { transform: scale(0.5); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
+.title-0 { color: #d32f2f; }
+.title-1 { color: #1976d2; }
+.title-2 { color: #388e3c; }
+.title-3 { color: #fbc02d; }
 
 .stars-display {
   display: flex;
   justify-content: center;
-  gap: 15px;
-  margin-bottom: 30px;
+  gap: 10px;
+  margin-bottom: 1.2rem;
 }
 
-.star-wrapper {
-  position: relative;
-  font-size: 60px;
-}
-
-.star-empty {
-  color: #34495e;
-}
-
+.star-wrapper { position: relative; font-size: 45px; }
+.star-empty { color: #eeeeee; }
 .star-filled {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 0; left: 0;
   color: #f1c40f;
-  text-shadow: 0 0 15px rgba(241, 196, 15, 0.6);
   transform: scale(0);
 }
 
-.animate-star {
-  animation: popStar 0.5s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
+.animate-star { animation: popStar 0.5s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 @keyframes popStar {
   0% { transform: scale(0); }
-  70% { transform: scale(1.3); }
   100% { transform: scale(1); }
 }
 
+/* 4. ŠTATISTIKY (Kompaktný blok) */
 .stats-container {
-  background: rgba(0,0,0,0.2);
-  padding: 20px;
-  border-radius: 15px;
-  margin-bottom: 30px;
+  background: #f8f5f2;
+  border-radius: 20px;
+  border: 1px solid #efebe9;
+  margin-bottom: 1.5rem;
 }
 
 .stat-item {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10px;
-  font-size: 1.2rem;
+  padding: 0.7rem 1.2rem;
+  border-bottom: 1px solid #efebe9;
 }
 
-.stat-value {
-  font-weight: bold;
-}
+.stat-item:last-child { border-bottom: none; }
+.stat-label { font-size: 1.15rem; font-weight: 700; color: #8d6e63; }
+.stat-value { font-size: 1rem; font-weight: 800; color: #3e2723; }
+.highlight { color: #4caf50; font-size: 1.1rem; }
 
-.highlight {
-  color: #2ecc71;
-  font-size: 1.4rem;
-}
-
+/* 5. TLAČIDLÁ (IDENTICKÉ EFEKTY AKO PAUSE MENU) */
 .action-buttons {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 16px;
 }
 
 .btn {
-  padding: 15px;
+  width: 100%;
+  padding: 1.1rem;
   border: none;
-  border-radius: 12px;
+  border-radius: 20px;
   font-size: 1.1rem;
-  font-weight: bold;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   cursor: pointer;
-  transition: transform 0.1s, background 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.btn:active { transform: scale(0.95); }
+/* Skúsiť znova = Zelené (ako Resume v PauseMenu) */
+.btn-retry {
+  background: #4caf50;
+  color: white;
+  box-shadow: 0 6px 0 #2e7d32;
+}
 
-.btn-retry { background: #3498db; color: white; }
-.btn-retry:hover { background: #2980b9; }
+.btn-retry:hover {
+  background: #43a047;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 #2e7d32;
+}
 
-.btn-menu { background: #95a5a6; color: white; }
-.btn-menu:hover { background: #7f8c8d; }
+/* Výber levelov = Cappuccino (ako ostatné v PauseMenu) */
+.btn-menu {
+  background: #f8f5f2;
+  color: #5d4037;
+  box-shadow: 0 6px 0 #d7ccc8;
+}
+
+.btn-menu:hover {
+  background: #efebe9;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 #d7ccc8;
+}
+
+/* SPOLOČNÝ KLIK PRE OBA */
+.btn:active {
+  transform: translateY(4px) !important;
+  box-shadow: 0 2px 0 transparent !important;
+}
+
+/* 6. RESPONZIVITA (Zhodná s PauseMenu) */
+@media (max-width: 380px) {
+  .game-over-card { padding: 1.5rem 1.2rem; }
+  .title { font-size: 1.2rem; }
+  .star-wrapper { font-size: 38px; }
+  .btn { padding: 0.9rem; font-size: 0.95rem; }
+  .stat-item { padding: 0.5rem 1rem; }
+}
+
+@media (max-height: 600px) {
+  .game-over-card { padding: 1rem; }
+  .title { margin-bottom: 0.2rem; }
+  .stars-display { margin-bottom: 0.5rem; }
+  .stats-container { margin-bottom: 0.8rem; }
+}
 </style>
