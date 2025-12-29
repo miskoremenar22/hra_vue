@@ -1,15 +1,22 @@
 <script setup>
+import { ref, onMounted } from 'vue'
+import { getGlobalStats } from '@/utils/progress'
+
 const emit = defineEmits(['close']);
+const stats = ref({
+  totalScore: 0,
+  totalServed: 0,
+  totalStars: 0,
+  totalGames: 0
+});
+
+onMounted(() => {
+  stats.value = getGlobalStats();
+});
 </script>
 
 <template>
   <div class="modal-backdrop" @click.self="emit('close')">
-    <div class="modal-bg-decor">
-      <span class="m-float m-1">⭐</span>
-      <span class="m-float m-2">👨‍🍳</span>
-      <span class="m-float m-3">🔥</span>
-    </div>
-
     <div class="modal-card animate-pop">
       <button class="close-x" @click="emit('close')">×</button>
       
@@ -23,31 +30,37 @@ const emit = defineEmits(['close']);
         <div class="stat-row">
           <div class="stat-info">
             <span class="stat-label">Obslúžení zákazníci:</span>
-            <strong class="stat-value">12</strong>
+            <strong class="stat-value">{{ stats.totalServed }}</strong>
           </div>
           <div class="stat-icon-bg">👥</div>
         </div>
 
-        <div class="stat-row burnt">
+        <div class="stat-row">
           <div class="stat-info">
-            <span class="stat-label">Spálené jedlá:</span>
-            <strong class="stat-value">2</strong>
+            <span class="stat-label">Celkové skóre:</span>
+            <strong class="stat-value">{{ stats.totalScore }}</strong>
           </div>
-          <div class="stat-icon-bg">🔥</div>
+          <div class="stat-icon-bg">💰</div>
         </div>
 
         <div class="stat-row">
           <div class="stat-info">
-            <span class="stat-label">Získané hviezdičky:</span>
-            <div class="stars-display">⭐⭐⭐</div>
+            <span class="stat-label">Získané hviezdy:</span>
+            <strong class="stat-value">{{ stats.totalStars }} ⭐</strong>
           </div>
           <div class="stat-icon-bg">✨</div>
         </div>
+
+        <div class="stat-row">
+          <div class="stat-info">
+            <span class="stat-label">Počet pokusov:</span>
+            <strong class="stat-value">{{ stats.totalGames }}</strong>
+          </div>
+          <div class="stat-icon-bg">🎮</div>
+        </div>
       </div>
 
-      <button class="confirm-btn" @click="emit('close')">
-        ROZUMIEM
-      </button>
+      <button class="confirm-btn" @click="emit('close')">POKRAČOVAŤ</button>
     </div>
   </div>
 </template>

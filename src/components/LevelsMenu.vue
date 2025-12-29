@@ -36,6 +36,25 @@ const selectLevel = (localLevel) => {
   const globalLevelId = currentCuisine.value.levels[localLevel - 1]
   emit('select-level', globalLevelId)
 }
+
+const showStatsFor = ref(null);
+
+const toggleStats = (id) => {
+  showStatsFor.value = showStatsFor.value === id ? null : id;
+};
+
+const getBestTime = (id) => {
+  const time = progress.value.bestTimes?.[id];
+  if (!time) return 'N/A';
+  const m = Math.floor(time / 60);
+  const s = time % 60;
+  return `${m}:${s.toString().padStart(2, '0')}s`;
+};
+
+const getAttempts = (id) => {
+  return progress.value.attempts?.[id] || 0;
+};
+
 </script>
 
 <template>
@@ -84,6 +103,25 @@ const selectLevel = (localLevel) => {
             :disabled="!isLevelUnlocked(localLvl)"
             @click="selectLevel(localLvl)"
           >
+            <div 
+              v-if="isLevelUnlocked(localLvl)" 
+              class="info-btn" 
+              @click.stop="toggleStats(localLvl)"
+            >
+              i
+            </div>
+
+            <div v-if="showStatsFor === localLvl" class="stats-popover animate-pop">
+              <div class="popover-item">
+                <span class="pop-label">⏱️ Naj čas:</span>
+                <span class="pop-val">{{ getBestTime(localLvl) }}</span>
+              </div>
+              <div class="popover-item">
+                <span class="pop-label">🎮 Pokusy:</span>
+                <span class="pop-val">{{ getAttempts(localLvl) }}</span>
+              </div>
+            </div>
+
             <div class="level-number">LEVEL {{ localLvl }}</div>
             
             <div v-if="!isLevelUnlocked(localLvl)" class="tile-lock">🔒</div>
@@ -101,7 +139,7 @@ const selectLevel = (localLevel) => {
     </div>
 
     <div class="bottom-nav">
-      <button @click="prevSection" :disabled="currentSection === 0" class="arrow-btn" aria-label="Predchádzajúca">
+      <button @click="prevSection" :disabled="currentSection === 0" class="arrow-btn">
         <span class="arrow">‹</span>
       </button>
 
@@ -115,7 +153,7 @@ const selectLevel = (localLevel) => {
         ></span>
       </div>
 
-      <button @click="nextSection" :disabled="currentSection === cuisines.length - 1" class="arrow-btn" aria-label="Nasledujúca">
+      <button @click="nextSection" :disabled="currentSection === cuisines.length - 1" class="arrow-btn">
         <span class="arrow">›</span>
       </button>
     </div>
@@ -398,5 +436,59 @@ const selectLevel = (localLevel) => {
   .cuisine-container { padding: 1rem; }
   .cuisine-header { margin-bottom: 1rem; }
   .bottom-nav { margin-top: 1.5rem; }
+}
+
+/* Základný kontajner dlaždice musí byť relative */
+/* 1. Rodičovský prvok musí byť relative, inak absolute vnútri nefunguje */
+.level-tile, .level-square { 
+  position: relative !important; 
+  overflow: visible !important; /* Aby popover nezmizol za okrajom */
+}
+
+/* 2. Ikona "i" - výrazná, jasná a v rohu */
+.info-btn {
+  position: absolute !important;
+  top: 10px !important;    /* Odsadenie zhora */
+  right: 10px !important;  /* Odsadenie zprava */
+  
+  width: 28px !important;  /* Zväčšená */
+  height: 28px !important; /* Zväčšená */
+  
+  /* Farba pozadia (použije hlavnú farbu témy) a jasný biely okraj */
+  background: var(--theme-color, #e53935) !important; 
+  border: 2px solid white !important;
+  border-radius: 50% !important;
+  
+  /* Písmo */
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  color: white !important;
+  
+  /* Vycentrovanie písmena "i" v krúžku */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
+  cursor: pointer !important;
+  z-index: 50 !important; /* Musí byť nad číslom levelu */
+}
+
+/* 3. Popover so štatistikami */
+.stats-popover {
+  position: absolute !important;
+  top: 45px !important; /* Zobrazí sa pod ikonou "i" */
+  right: 0 !important;
+  
+  background: #2c3e50 !important;
+  color: white !important;
+  padding: 10px !important;
+  border-radius: 12px !important;
+  width: 140px !important;
+  font-size: 12px !important;
+  box-shadow: 0 8px 15px rgba(0,0,0,0.4) !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  pointer-events: none;
+  z-index: 100 !important;
 }
 </style>

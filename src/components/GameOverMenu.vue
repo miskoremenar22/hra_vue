@@ -1,7 +1,7 @@
 <template>
   <div class="game-over-overlay">
-    <div class="game-over-card">
-      <h1 class="title">ČAS VYPRŠAL</h1>
+    <div class="game-over-card" :class="{ 'card-win': stars > 0 }">
+      <h1 class="title" :class="`title-${stars}`">{{ statusTitle }}</h1>
       
       <div class="stars-display">
         <div v-for="i in 3" :key="i" class="star-wrapper">
@@ -23,6 +23,14 @@
           <span class="stat-label">Dosiahnuté skóre:</span>
           <span class="stat-value highlight">{{ score }}</span>
         </div>
+        <div class="stat-item">
+          <span class="stat-label">Čas pre 1. hviezdu:</span>
+          <span class="stat-value">{{ timeToPass ? formatTime(timeToPass) : '--:--' }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Počet pokusov:</span>
+          <span class="stat-value">{{ attempts }}</span>
+        </div>
       </div>
 
       <div class="action-buttons">
@@ -34,31 +42,48 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 const props = defineProps({
-  stars: Number,
-  score: Number,
-  servedCount: Number
+  score: { type: Number, default: 0 },
+  stars: { type: Number, default: 0 },
+  servedCount: { type: Number, default: 0 },
+  attempts: { type: Number, default: 0 },
+  timeToPass: { type: Number, default: null }
 })
 
 defineEmits(['retry', 'toLevels'])
 
+// LOGIKA PRE DYNAMICKÝ TEXT
+const statusTitle = computed(() => {
+  if (props.stars === 3) return 'PERFEKTNÁ PRÁCA!'
+  if (props.stars === 2) return 'SKVELÁ PRÁCA!'
+  if (props.stars === 1) return 'DOBRÁ PRÁCA!'
+  return 'ČAS VYPRŠAL'
+})
+
+const formatTime = (sec) => {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+};
+
 const animatedStars = ref(0)
 
 onMounted(() => {
-  // Animácia hviezdičiek po jednej
   if (props.stars > 0) {
     for (let i = 1; i <= props.stars; i++) {
       setTimeout(() => {
         animatedStars.value = i
-      }, 500 * i) // Každá hviezda vyskočí po pol sekunde
+      }, 500 * i)
     }
   }
 })
 </script>
 
 <style scoped>
+/* Pôvodné štýly zostávajú, pridávame/upravujeme len title */
+
 .game-over-overlay {
   position: fixed;
   inset: 0;
@@ -74,26 +99,38 @@ onMounted(() => {
   background: #2c3e50;
   padding: 40px;
   border-radius: 30px;
-  border: 5px solid #f1c40f;
+  border: 5px solid #bdc3c7; /* Neutrálny rámik pre prehru */
   text-align: center;
   color: white;
   min-width: 350px;
   animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+/* Zlatý rámik ak hráč vyhral aspoň jednu hviezdu */
+.card-win {
+  border-color: #f1c40f;
+}
+
+.title {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 0px #000;
+  transition: color 0.3s;
+}
+
+/* FARBY PODĽA ÚSPECHU */
+.title-0 { color: #e74c3c; } /* Červená - Prehra */
+.title-1 { color: #3498db; } /* Modrá - Dobrá */
+.title-2 { color: #2ecc71; } /* Zelená - Skvelá */
+.title-3 { color: #f1c40f; } /* Zlatá - Perfektná */
+
+/* ... Zvyšok tvojich pôvodných štýlov (stars, stats, buttons) ... */
+
 @keyframes slideIn {
   from { transform: scale(0.5); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
 
-.title {
-  font-size: 2.5rem;
-  color: #e74c3c;
-  margin-bottom: 20px;
-  text-shadow: 2px 2px 0px #000;
-}
-
-/* Hviezdy */
 .stars-display {
   display: flex;
   justify-content: center;
@@ -129,7 +166,6 @@ onMounted(() => {
   100% { transform: scale(1); }
 }
 
-/* Štatistiky */
 .stats-container {
   background: rgba(0,0,0,0.2);
   padding: 20px;
@@ -153,7 +189,6 @@ onMounted(() => {
   font-size: 1.4rem;
 }
 
-/* Tlačidlá */
 .action-buttons {
   display: flex;
   flex-direction: column;

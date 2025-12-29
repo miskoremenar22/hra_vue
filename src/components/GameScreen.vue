@@ -11,18 +11,24 @@ import PauseMenu from './PauseMenu.vue' // Pridaný import
 
 // Utility a aktíva
 import { ingredientIcons } from '../utils/icons'
-import { updateLevelResult } from '@/utils/progress'
+import { updateLevelResult, saveGameToStats } from '@/utils/progress'
 import bgAsian from '../assets/backgrounds/bg-asian.png'
 import bgMexican from '../assets/backgrounds/bg-mexican.png'
 import bgItalian from '../assets/backgrounds/bg-italian.png'
 import bgAmerican from '../assets/backgrounds/bg-american.png'
 import trayImg from '../assets/restaurant/tray.svg'
 import tackaImg from '../assets/restaurant/tacka_hranata.png'
-
+import { incrementLevelAttempt } from '@/utils/progress'
 import GameOverMenu from './GameOverMenu.vue'
 
 const props = defineProps(['levelId', 'cuisineType'])
 const emit = defineEmits(['back', 'backToMain', 'backToLevels'])
+
+const startTime = ref(Date.now());
+const timeToFirstStar = ref(null);
+const currentAttempts = ref(0);
+
+
 
 /* =========================================
    1. ZÁKLADNÉ STAVY HRY (Score, Pause, End)
@@ -37,14 +43,20 @@ const endLevel = () => {
   levelEnded.value = true
   clearInterval(timerInterval)
 
-  // Prepočet na lokálny level (1-4)
   const localLevel = ((props.levelId - 1) % 4) + 1
 
   updateLevelResult(
     props.cuisineType,
     localLevel,
-    stars.value
+    stars.value,
+    timeToFirstStar.value
   )
+
+  saveGameToStats({
+    score: score.value,
+    served: servedTotalCount.value,
+    stars: stars.value
+  })
 }
 
 // Funkcia pre REŠTART levelu
@@ -73,6 +85,35 @@ const handleRetry = () => {
     scheduleNextCustomer()
   }
 }
+
+// Získame hranicu pre 1. hviezdu z JSON dát
+const threshold1Star = computed(() => {
+  // Musíme hľadať v poli .levels
+  const levelData = cuisineLevels.value.find(l => l.level === props.levelId);
+  return levelData?.requiredScore || 0; // V tvojom JSON je to pravdepodobne requiredScore
+});
+
+// Sledujeme skóre
+watch(score, (newScore) => {
+  if (newScore >= threshold1Star.value && timeToFirstStar.value === null) {
+    // V momente dosiahnutia 1. hviezdy vypočítame čas v sekundách
+    timeToFirstStar.value = Math.floor((Date.now() - startTime.value) / 1000);
+  }
+});
+
+onMounted(() => {
+  // Pri štarte započítame pokus
+  currentAttempts.value = incrementLevelAttempt(props.cuisineType, props.levelId);
+});
+
+// Pri skončení hry v metóde stopGame (alebo tam, kde voláš updateLevelResult)
+const handleGameOver = () => {
+  const starsCount = calculateStars(score.value);
+  updateLevelResult(props.cuisineType, props.levelId, starsCount, timeToFirstStar.value);
+  levelEnded.value = true;
+};
+
+
 
 /* =========================================
    2. KONFIGURÁCIA LEVELU A DÁTA
@@ -167,7 +208,7 @@ const handleDropIngredient = ({ ingredient, x, y }) => {
    ========================================= */
 const cooking = ref(false)
 const cookProgress = ref(0)
-const COOK_TIME = 5000
+const COOK_TIME = 2000
 let cookRAF = null
 let cookStartTime = null
 let elapsedOnPause = 0
@@ -469,6 +510,8 @@ onUnmounted(() => {
       @serve="servePlate"
     />
 
+    
+
     <RecipesMenu :recipes="allowedRecipes" />
 
     <GameOverMenu 
@@ -476,6 +519,8 @@ onUnmounted(() => {
       :stars="stars"
       :score="score"
       :servedCount="servedTotalCount"
+      :attempts="currentAttempts"
+      :timeToPass="timeToFirstStar"
       @retry="handleRetry"
       @toLevels="emit('backToLevels')"
     />
