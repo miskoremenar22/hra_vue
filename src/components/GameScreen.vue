@@ -752,7 +752,7 @@ onUnmounted(() => {
 .ing-animated {
   z-index: 5;
   /* Suroviny teraz tiež škálujeme podľa výšky (vh) */
-  font-size: clamp(20px, 4vh, 35px); 
+  font-size: clamp(25.6px, 5.1vh, 44.8px);
   filter: drop-shadow(1.5px 1.5px 0px rgba(0,0,0,0.1));
   transform: translate(-50%, -50%);
   position: absolute;

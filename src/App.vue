@@ -47,3 +47,27 @@ const startLevel = (levelId) => {
 
   <StatsModal v-if="isStatsOpen" @close="isStatsOpen = false" />
 </template>
+
+<style scoped>
+
+  /* Toto vložíš do App.vue alebo globálneho CSS */
+:global(html), :global(body) {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Zakáže skrolovanie */
+  position: fixed;  /* Fixne obrazovku na mieste */
+  touch-action: none; /* Zabráni "ťahaniu" stránky na mobiloch */
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+  /* Ak používaš novšie prehliadače, použi 100dvh pre lepšiu podporu mobilných líšt */
+  height: 100dvh; 
+  overflow: hidden;
+  position: relative;
+}
+
+</style>

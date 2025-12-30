@@ -57,7 +57,7 @@ const nextPage = () => {
 </template>
 
 <style scoped>
-.recipes-system { position: absolute; bottom: 40px; right: 30px; z-index: 100; }
+.recipes-system { position: absolute; bottom: 20px; right: 20px; z-index: 100; }
 
 .open-trigger {
   width: 80px; height: 80px; border-radius: 15px; border: 4px solid #fff;
