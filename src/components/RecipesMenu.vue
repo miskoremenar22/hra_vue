@@ -157,5 +157,63 @@ const nextPage = () => {
   transform: scale(0.9);
 }
 
+/* =========================
+   MOBILE LANDSCAPE – RECEPTY
+========================= */
+@media (max-width: 900px) and (orientation: landscape) {
 
+  .recipes-system {
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .open-trigger {
+    width: 60px;
+    height: 60px;
+    font-size: 1.8rem;
+  }
+
+  .open-trigger .label {
+    font-size: 9px;
+  }
+
+  .side-menu {
+    width: 250px;
+    height: 320px;
+    bottom: 0;
+    right: 0;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.25);
+  }
+
+  .menu-header {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  .recipes-list {
+    padding: 8px;
+    gap: 6px;
+    overflow-y: auto;
+  }
+
+  .menu-footer {
+    padding: 6px 10px;
+  }
+
+  .page-info {
+    font-size: 11px;
+  }
+
+  .next-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+  }
+
+  .close-btn {
+    font-size: 18px;
+    margin-right: 8px;
+  }
+}
 </style>

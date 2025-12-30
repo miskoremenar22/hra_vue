@@ -282,17 +282,32 @@ const spawnCustomer = () => {
   })
 }
 
+let first = 0;
 const scheduleNextCustomer = () => {
   if (levelEnded.value || !currentLevelConfig.value) return
 
-  const { min, max } = currentLevelConfig.value.spawnInterval
-  const delay = (min + Math.random() * (max - min)) * 1000
+  if(first == 0){
+    first += 1;
+    const { min, max } = 0
+    const delay = 0
 
-  clearTimeout(spawnTimer)
-  spawnTimer = setTimeout(() => {
-    if (!isPaused.value) spawnCustomer()
-    scheduleNextCustomer()
-  }, delay)
+    clearTimeout(spawnTimer)
+    spawnTimer = setTimeout(() => {
+      if (!isPaused.value) spawnCustomer()
+      scheduleNextCustomer()
+    }, delay)
+  }
+  else{
+    const { min, max } = currentLevelConfig.value.spawnInterval
+    const delay = (min + Math.random() * (max - min)) * 1000
+
+    clearTimeout(spawnTimer)
+    spawnTimer = setTimeout(() => {
+      if (!isPaused.value) spawnCustomer()
+      scheduleNextCustomer()
+    }, delay)
+  }
+  
 }
 
 const removeCustomer = (id) => {
@@ -680,6 +695,7 @@ onUnmounted(() => {
   box-shadow: 0 10px 20px rgba(0,0,0,0.2);
   font-size: 1.2rem;
 }
+
 
 /* =========================================
    5. PRÍPRAVNÝ PULTOVÝ SYSTÉM (Tácka)

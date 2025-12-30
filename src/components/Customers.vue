@@ -270,10 +270,24 @@ onUnmounted(() => {
 }
 
 /* TABLET & MOBILE – IBA POSUN HORE */
-@media (max-width: 1000px) {
+@media (max-width: 900px) and (orientation: landscape) {
   .customer-wrapper {
     bottom: 59%;
   }
+
+  .customer img{
+    width: clamp(80px, 10vw, 120px);;
+  }
+  
+  .order-bubble{
+    font-size: clamp(0.7rem, 1.0vw, 0.8rem);
+    bottom: 90%;
+  }
+
+  .mood-bubble{
+    font-size: 27px;
+  }
+  
 }
 
 

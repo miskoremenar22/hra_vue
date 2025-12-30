@@ -325,4 +325,68 @@ const onDrop = (e) => {
   z-index: 999999;
   filter: drop-shadow(0 8px 16px rgba(0,0,0,0.4));
 }
+
+/* RESPONZIVITA */
+/* =========================
+   MOBILE LANDSCAPE – ŠPAJZA
+========================= */
+@media (max-width: 900px) and (orientation: landscape) {
+  .recipes-system {
+    bottom: 10px;
+    right: 10px;
+  }
+  .triggers-wrapper{
+    gap: 0px;
+  }
+
+  .open-trigger {
+    width: 60px;
+    height: 60px;
+    font-size: 1.8rem;
+  }
+
+  .open-trigger .label {
+    font-size: 9px;
+  }
+
+  .serve-btn{
+    width: 60px;
+    height: 60px;
+    font-size: 1.8rem;
+  }
+
+  .serve-btn.shifted {
+    left: 350px; 
+    transform: scale(0.9); 
+  }
+
+  .side-menu {
+    width: 35%;
+    height: 320px;
+    bottom: 0;
+    left: 0;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .ingredients-grid {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 4px;
+  }
+
+  .ing-item {
+    padding: 4px;
+  }
+
+  .ing-icon {
+    font-size: 22px;
+  }
+
+  .ing-name {
+    font-size: 9px;
+  }
+}
+
+
+
 </style>

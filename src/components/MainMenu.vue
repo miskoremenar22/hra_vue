@@ -223,4 +223,5 @@ const emit = defineEmits(['start-game', 'show-stats']);
   .title { font-size: 2.2rem; }
   .chef-avatar { width: 100px; height: 100px; font-size: 60px; line-height: 100px; }
 }
+
 </style>
