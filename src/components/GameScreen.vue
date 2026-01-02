@@ -324,7 +324,6 @@ const finishCooking = () => {
 const customers = ref([])
 const customerRefs = ref({})
 const customerOrders = ref({})
-let spawnTimer = null
 
 const spawnCustomer = () => {
   if (levelEnded.value || isPaused.value || !currentLevelConfig.value) return
@@ -332,37 +331,41 @@ const spawnCustomer = () => {
 
   customers.value.push({
     id: Date.now() + Math.random(),
-    cuisine: currentCuisineKey.value, // !!! OPRAVA: správna kuchyňa podľa resolveru
+    cuisine: currentCuisineKey.value, 
     leaving: false
   })
 }
 
-let first = 0;
+let firstSpawn = true
+let spawnTimer = null
+
 const scheduleNextCustomer = () => {
   if (levelEnded.value || !currentLevelConfig.value) return
 
-  if(first == 0){
-    first += 1;
-    const { min, max } = 0
-    const delay = 0
-
+  // vyčistíme predchádzajúci timeout (poistka)
+  if (spawnTimer) {
     clearTimeout(spawnTimer)
-    spawnTimer = setTimeout(() => {
-      if (!isPaused.value) spawnCustomer()
-      scheduleNextCustomer()
-    }, delay)
+    spawnTimer = null
   }
-  else{
+
+  let delay = 0
+
+  if (firstSpawn) {
+    // 1️⃣ PRVÝ ZÁKAZNÍK HNEĎ
+    firstSpawn = false
+    delay = 0
+  } else {
+    // 2️⃣ ĎALŠÍ PODĽA INTERVALU
     const { min, max } = currentLevelConfig.value.spawnInterval
-    const delay = (min + Math.random() * (max - min)) * 1000
-
-    clearTimeout(spawnTimer)
-    spawnTimer = setTimeout(() => {
-      if (!isPaused.value) spawnCustomer()
-      scheduleNextCustomer()
-    }, delay)
+    delay = (min + Math.random() * (max - min)) * 1000
   }
 
+  spawnTimer = setTimeout(() => {
+    if (!isPaused.value && !levelEnded.value) {
+      spawnCustomer()
+    }
+    scheduleNextCustomer()
+  }, delay)
 }
 
 const removeCustomer = (id) => {
