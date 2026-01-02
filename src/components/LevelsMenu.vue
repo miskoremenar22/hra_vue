@@ -1,60 +1,101 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { getCuisineProgress } from '@/utils/progress'
+import levelsData from '@/data/levels.json' // ← cesta uprav podľa projektu
 
-// LOGIKA ZOSTÁVA NEDOTKNUTÁ
 const emit = defineEmits(['select-level', 'back'])
 const currentSection = ref(0)
 
-const cuisines = [
-  { key: 'asian', name: 'Ázijská kuchyňa', icon: '🏮', color: '#e53935', levels: [1, 2, 3, 4] },
-  { key: 'mexican', name: 'Mexická kuchyňa', icon: '🌵', color: '#43a047', levels: [5, 6, 7, 8] },
-  { key: 'italian', name: 'Talianska kuchyňa', icon: '🍕', color: '#fdd835', levels: [9, 10, 11, 12] },
-  { key: 'american', name: 'Americký Fast Food', icon: '🍔', color: '#1e88e5', levels: [13, 14, 15, 16] }
-]
-
-const nextSection = () => { if (currentSection.value < cuisines.length - 1) currentSection.value++ }
-const prevSection = () => { if (currentSection.value > 0) currentSection.value-- }
-const currentCuisine = computed(() => cuisines[currentSection.value])
-const progress = computed(() => getCuisineProgress(currentCuisine.value.key))
-
-const isCuisineUnlocked = (cuisineKey) => {
-  const idx = cuisines.findIndex(c => c.key === cuisineKey)
-  if (idx <= 0) return true
-  const prevKey = cuisines[idx - 1].key
-  const prevProg = getCuisineProgress(prevKey)
-  return prevProg.unlocked > 4
+/**
+ * META INFO – vizuálne veci ostávajú tu,
+ * gameplay ide čisto z JSON
+ */
+const cuisineMeta = {
+  asian:    { name: 'Ázijská kuchyňa', icon: '🏮', color: '#e53935' },
+  mexican: { name: 'Mexická kuchyňa', icon: '🌵', color: '#43a047' },
+  italian: { name: 'Talianska kuchyňa', icon: '🍕', color: '#fdd835' },
+  american:{ name: 'Americký Fast Food', icon: '🍔', color: '#1e88e5' }
 }
 
+/**
+ * 🔥 DYNAMICKÉ KUCHYNE Z JSON
+ */
+const cuisines = computed(() => {
+  return Object.entries(levelsData)
+    .sort((a, b) => (a[1].order ?? 0) - (b[1].order ?? 0))
+    .map(([key, data]) => {
+      const levels = data.levels.map(l => l.level)
+      return {
+        key,
+        levels,
+        ...cuisineMeta[key]
+      }
+    })
+})
+
+const currentCuisine = computed(() => cuisines.value[currentSection.value])
+
+const nextSection = () => {
+  if (currentSection.value < cuisines.value.length - 1) currentSection.value++
+}
+const prevSection = () => {
+  if (currentSection.value > 0) currentSection.value--
+}
+
+const progress = computed(() =>
+  getCuisineProgress(currentCuisine.value.key)
+)
+
+/**
+ * 🔒 ODOMYKANIE KUCHÝŇ – nezmenené správanie
+ */
+const isCuisineUnlocked = (cuisineKey) => {
+  const idx = cuisines.value.findIndex(c => c.key === cuisineKey)
+  if (idx <= 0) return true
+
+  const prevKey = cuisines.value[idx - 1].key
+  const prevProg = getCuisineProgress(prevKey)
+  return prevProg.unlocked > cuisines.value[idx - 1].levels.length
+}
+
+/**
+ * 🔓 ODOMYKANIE LEVELU (lokálny index)
+ */
 const isLevelUnlocked = (localLevel) => {
   return localLevel <= (progress.value?.unlocked || 1)
 }
 
+/**
+ * ▶️ VÝBER LEVELU
+ */
 const selectLevel = (localLevel) => {
   if (!isCuisineUnlocked(currentCuisine.value.key)) return
   if (!isLevelUnlocked(localLevel)) return
-  const globalLevelId = currentCuisine.value.levels[localLevel - 1]
+
+  const globalLevelId =
+    currentCuisine.value.levels[localLevel - 1]
+
   emit('select-level', globalLevelId)
 }
 
-const showStatsFor = ref(null);
+/* ---- STATS (bez zmeny) ---- */
+const showStatsFor = ref(null)
 
 const toggleStats = (id) => {
-  showStatsFor.value = showStatsFor.value === id ? null : id;
-};
+  showStatsFor.value = showStatsFor.value === id ? null : id
+}
 
 const getBestTime = (id) => {
-  const time = progress.value.bestTimes?.[id];
-  if (!time) return 'N/A';
-  const m = Math.floor(time / 60);
-  const s = time % 60;
-  return `${m}:${s.toString().padStart(2, '0')}s`;
-};
+  const time = progress.value.bestTimes?.[id]
+  if (!time) return 'N/A'
+  const m = Math.floor(time / 60)
+  const s = time % 60
+  return `${m}:${s.toString().padStart(2, '0')}s`
+}
 
 const getAttempts = (id) => {
-  return progress.value.attempts?.[id] || 0;
-};
-
+  return progress.value.attempts?.[id] || 0
+}
 </script>
 
 <template>
@@ -96,7 +137,7 @@ const getAttempts = (id) => {
 
         <div v-else class="levels-grid">
           <button
-            v-for="localLvl in [1, 2, 3, 4]"
+            v-for="localLvl in currentCuisine.levels.length"
             :key="localLvl"
             class="level-tile"
             :class="{ 'tile-locked': !isLevelUnlocked(localLvl) }"

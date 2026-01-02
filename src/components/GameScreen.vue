@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import gameData from '../data/gameData.json'
+import levelsData from '@/data/levels.json'
 import levels from '@/data/levels.json'
 
 // Komponenty
@@ -28,7 +29,44 @@ const startTime = ref(Date.now());
 const timeToFirstStar = ref(null);
 const currentAttempts = ref(0);
 
+/**
+ * =========================================
+ *  DÔLEŽITÉ: RESOLVER LEVELU (DYNAMICKÉ)
+ *  - najprv hľadáme level v props.cuisineType (ak existuje)
+ *  - až potom fallback cez všetky kuchyne
+ *  - zároveň vyrátame "localLevel" podľa poradia v danej kuchyni (1..N)
+ * =========================================
+ */
+const findLevelById = (levelId, preferredCuisineKey = null) => {
+  // 1) Preferovaná kuchyňa (toto rieši tvoj bug: level 5 v asian sa neotvorí ako mexican)
+  if (preferredCuisineKey && levelsData?.[preferredCuisineKey]?.levels) {
+    const cuisine = levelsData[preferredCuisineKey]
+    const idx = cuisine.levels.findIndex(l => l.level === levelId)
+    if (idx !== -1) {
+      return {
+        cuisineKey: preferredCuisineKey,
+        level: cuisine.levels[idx],
+        localLevel: idx + 1, // 1-based v rámci kuchyne
+        localIndex: idx
+      }
+    }
+  }
 
+  // 2) Fallback: nájdi prvý match v celom JSON (ak cuisineType neprišiel / je zlý)
+  for (const [cuisineKey, cuisine] of Object.entries(levelsData || {})) {
+    const idx = cuisine.levels.findIndex(l => l.level === levelId)
+    if (idx !== -1) {
+      return {
+        cuisineKey,
+        level: cuisine.levels[idx],
+        localLevel: idx + 1,
+        localIndex: idx
+      }
+    }
+  }
+
+  return null
+}
 
 /* =========================================
    1. ZÁKLADNÉ STAVY HRY (Score, Pause, End)
@@ -38,16 +76,47 @@ const levelEnded = ref(false)
 const isPaused = ref(false) // Stav pauzy
 const servedTotalCount = ref(0)
 
+/**
+ * =========================================
+ * 2. KONFIGURÁCIA LEVELU A DÁTA (OPRAVA)
+ * - currentCuisineKey berieme z resolveru (nie natvrdo z props.cuisineType)
+ * - currentLevelConfig je level objekt z levels.json
+ * - localLevelNumber = 1..N v rámci kuchyne (na progres/attempts)
+ * =========================================
+ */
+const levelEntry = computed(() => findLevelById(props.levelId, props.cuisineType))
+
+const currentLevelConfig = computed(() => levelEntry.value?.level)
+const currentCuisineKey = computed(() => levelEntry.value?.cuisineKey || props.cuisineType)
+const localLevelNumber = computed(() => levelEntry.value?.localLevel || 1)
+const localLevelIndex = computed(() => levelEntry.value?.localIndex ?? 0)
+
+// Všetky levely danej kuchyne
+const cuisineLevels = computed(() => levels[currentCuisineKey.value]?.levels || [])
+
+// Získame hranicu pre 1. hviezdu z JSON dát
+const threshold1Star = computed(() => {
+  const cfg = currentLevelConfig.value
+  return cfg?.requiredScore || 0
+})
+
+// Sledujeme skóre
+watch(score, (newScore) => {
+  if (newScore >= threshold1Star.value && timeToFirstStar.value === null) {
+    // V momente dosiahnutia 1. hviezdy vypočítame čas v sekundách
+    timeToFirstStar.value = Math.floor((Date.now() - startTime.value) / 1000);
+  }
+})
+
 const endLevel = () => {
   if (levelEnded.value) return
   levelEnded.value = true
   clearInterval(timerInterval)
 
-  const localLevel = ((props.levelId - 1) % 4) + 1
-
+  // !!! OPRAVA: progres ukladáme podľa lokálneho levelu v kuchyni (1..N), nie globálneho id
   updateLevelResult(
-    props.cuisineType,
-    localLevel,
+    currentCuisineKey.value,
+    localLevelNumber.value,
     stars.value,
     timeToFirstStar.value
   )
@@ -68,7 +137,7 @@ const handleRetry = () => {
   servedMeals.value = []
   customers.value = []
   customerOrders.value = {}
-  
+
   // Reset varenia
   cooking.value = false
   cookProgress.value = 0
@@ -77,7 +146,7 @@ const handleRetry = () => {
   // Reset stavov
   levelEnded.value = false
   isPaused.value = false
-  
+
   // Reset času a spawn zákazníkov
   if (currentLevelConfig.value) {
     timeLeft.value = currentLevelConfig.value.timeLimit
@@ -86,51 +155,37 @@ const handleRetry = () => {
   }
 }
 
-// Získame hranicu pre 1. hviezdu z JSON dát
-const threshold1Star = computed(() => {
-  // Musíme hľadať v poli .levels
-  const levelData = cuisineLevels.value.find(l => l.level === props.levelId);
-  return levelData?.requiredScore || 0; // V tvojom JSON je to pravdepodobne requiredScore
-});
-
-// Sledujeme skóre
-watch(score, (newScore) => {
-  if (newScore >= threshold1Star.value && timeToFirstStar.value === null) {
-    // V momente dosiahnutia 1. hviezdy vypočítame čas v sekundách
-    timeToFirstStar.value = Math.floor((Date.now() - startTime.value) / 1000);
-  }
-});
-
-onMounted(() => {
-  // Pri štarte započítame pokus
-  currentAttempts.value = incrementLevelAttempt(props.cuisineType, props.levelId);
-});
-
 // Pri skončení hry v metóde stopGame (alebo tam, kde voláš updateLevelResult)
 const handleGameOver = () => {
   const starsCount = calculateStars(score.value);
-  updateLevelResult(props.cuisineType, props.levelId, starsCount, timeToFirstStar.value);
+  // !!! OPRAVA: tiež lokálny level
+  updateLevelResult(currentCuisineKey.value, localLevelNumber.value, starsCount, timeToFirstStar.value);
   levelEnded.value = true;
 };
 
+onMounted(() => {
+  // Pri štarte započítame pokus
+  // !!! OPRAVA: attempts ukladáme podľa lokálneho levelu (1..N), nie globálneho id
+  currentAttempts.value = incrementLevelAttempt(currentCuisineKey.value, localLevelNumber.value);
+})
 
+/**
+ * =========================================
+ *  DYNAMICKÉ POVOLENÉ RECEPTY:
+ *  - berieme všetky levely v danej kuchyni do aktuálneho indexu (inclusive)
+ *  - nie podľa "l.level <= props.levelId", lebo global čísla skáču (mex 5..8)
+ * =========================================
+ */
+const allowedRecipeIds = computed(() => {
+  const arr = cuisineLevels.value
+  if (!arr.length) return []
+  const upto = Math.min(localLevelIndex.value, arr.length - 1)
+  return arr
+    .slice(0, upto + 1)
+    .flatMap(l => l.recipes || [])
+})
 
-/* =========================================
-   2. KONFIGURÁCIA LEVELU A DÁTA
-   ========================================= */
-const cuisineLevels = computed(() => levels[props.cuisineType]?.levels || [])
-
-const currentLevelConfig = computed(() => 
-  cuisineLevels.value.find(l => l.level === props.levelId)
-)
-
-const allowedRecipeIds = computed(() => 
-  cuisineLevels.value
-    .filter(l => l.level <= props.levelId)
-    .flatMap(l => l.recipes)
-)
-
-const cuisineData = computed(() => gameData[props.cuisineType])
+const cuisineData = computed(() => gameData[currentCuisineKey.value])
 
 const allowedRecipes = computed(() => {
   if (!cuisineData.value) return []
@@ -277,7 +332,7 @@ const spawnCustomer = () => {
 
   customers.value.push({
     id: Date.now() + Math.random(),
-    cuisine: props.cuisineType,
+    cuisine: currentCuisineKey.value, // !!! OPRAVA: správna kuchyňa podľa resolveru
     leaving: false
   })
 }
@@ -307,7 +362,7 @@ const scheduleNextCustomer = () => {
       scheduleNextCustomer()
     }, delay)
   }
-  
+
 }
 
 const removeCustomer = (id) => {
@@ -412,7 +467,8 @@ watch(stars, (val) => {
    ========================================= */
 const backgrounds = { asian: bgAsian, mexican: bgMexican, italian: bgItalian, american: bgAmerican }
 const backgroundStyle = computed(() => ({
-  backgroundImage: `url(${backgrounds[props.cuisineType]})`,
+  // !!! OPRAVA: background podľa reálneho cuisineKey (nie props.cuisineType)
+  backgroundImage: `url(${backgrounds[currentCuisineKey.value]})`,
   backgroundSize: 'cover',
   backgroundPosition: 'center'
 }))
@@ -432,16 +488,16 @@ onUnmounted(() => {
 })
 </script>
 
-
-
 <template>
   <div class="game-container" :style="backgroundStyle">
     <div class="hud">
       <button class="pause-trigger" @click.stop="isPaused = true">PAUZA</button>
+
       <div class="level-info">
-        Level {{ levelId }} | {{ cuisineType.toUpperCase() }}
+        <!-- OPRAVA: cuisineType môže byť undefined, použijeme currentCuisineKey -->
+        Level {{ levelId }} | {{ (currentCuisineKey || '').toUpperCase() }}
       </div>
-      
+
       <div class="level-progress">
         <div class="progress-bar">
           <div class="progress-fill" :style="{ width: levelProgress + '%' }" />
@@ -449,16 +505,16 @@ onUnmounted(() => {
             <span v-for="i in 3" :key="i" class="star" :class="{ active: i <= stars }">★</span>
           </div>
         </div>
+
         <div class="score-text">
-          {{ score }} / {{ currentLevelConfig.requiredScore }}
+          <!-- OPRAVA: poistka na currentLevelConfig -->
+          {{ score }} / {{ currentLevelConfig?.requiredScore ?? 0 }}
         </div>
       </div>
     </div>
 
-    
-
-    <PauseMenu 
-      v-if="isPaused" 
+    <PauseMenu
+      v-if="isPaused"
       @resume="isPaused = false"
       @retry="handleRetry"
       @toLevels="emit('backToLevels')"
@@ -480,7 +536,7 @@ onUnmounted(() => {
         :cuisine="c.cuisine"
         :queueIndex="getQueueIndex(c)"
         :allowedRecipes="allowedRecipes"
-        :is-paused="isPaused" 
+        :is-paused="isPaused"
         @order-ready="order => customerOrders[c.id] = order"
         @left="removeCustomer(c.id)"
         @left-complete="destroyCustomer(c.id)"
@@ -496,13 +552,19 @@ onUnmounted(() => {
         <div class="plate" ref="plateRef">
           <img :src="tackaImg" class="tray-on-counter" />
 
-          <div v-for="(ing, i) in onPlate" :key="i" class="ing-animated"
-               :style="{ left: ing.x + '%', top: ing.y + '%', position: 'absolute' }">
+          <div
+            v-for="(ing, i) in onPlate"
+            :key="i"
+            class="ing-animated"
+            :style="{ left: ing.x + '%', top: ing.y + '%', position: 'absolute' }"
+          >
             {{ getIcon(ing.name) }}
           </div>
         </div>
       </div>
-    </div> <div
+    </div>
+
+    <div
       v-for="(meal, index) in servedMeals"
       :key="meal.id"
       class="served-meal"
@@ -523,12 +585,10 @@ onUnmounted(() => {
       @serve="servePlate"
     />
 
-    
-
     <RecipesMenu :recipes="allowedRecipes" />
 
-    <GameOverMenu 
-      v-if="levelEnded" 
+    <GameOverMenu
+      v-if="levelEnded"
       :stars="stars"
       :score="score"
       :servedCount="servedTotalCount"
@@ -537,7 +597,6 @@ onUnmounted(() => {
       @retry="handleRetry"
       @toLevels="emit('backToLevels')"
     />
-
   </div>
 </template>
 
