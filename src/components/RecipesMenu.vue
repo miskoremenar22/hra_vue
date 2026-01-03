@@ -35,24 +35,30 @@ const nextPage = () => {
       </div>
 
       <div class="recipes-list">
-        <div v-for="recipe in displayedRecipes" :key="recipe.id" class="recipe-item">
+        <div v-for="(recipe, index) in displayedRecipes" :key="recipe.id || index" class="recipe-item">
           <div class="recipe-name">{{ recipe.name }}</div>
           <div class="recipe-formula">
-            <span v-for="ing in recipe.ingredients" :key="ing" :title="ing">
+            <span 
+              v-for="ing in recipe.ingredients" 
+              :key="ing" 
+              class="recipe-ing-icon"
+              :title="ing"
+            >
               {{ getIcon(ing) }}
             </span>
           </div>
         </div>
       </div>
 
-      <div v-if="recipes.length > itemsPerPage" class="menu-footer">
+      <div v-if="props.recipes && props.recipes.length > itemsPerPage" class="menu-footer">
         <span class="page-info">
-          {{ currentPage + 1 }} / {{ Math.ceil(recipes.length / itemsPerPage) }}
+          {{ currentPage + 1 }} / {{ Math.ceil(props.recipes.length / itemsPerPage) }}
         </span>
         <button class="next-btn" @click="nextPage">
-          {{ (currentPage + 1) * itemsPerPage < recipes.length ? '➡' : '⬅' }}
+          {{ (currentPage + 1) * itemsPerPage < props.recipes.length ? '➡' : '⬅' }}
         </button>
       </div>
+
     </div>
   </div>
 </template>
@@ -156,6 +162,17 @@ const nextPage = () => {
 
 .close-btn:active {
   transform: scale(0.9);
+}
+
+.recipe-ing-icon {
+  
+  margin: 0 2px;
+  font-size: 1.2rem;
+  transition: transform 0.1s;
+}
+
+.recipe-ing-icon:hover {
+  transform: scale(1.2); /* Jemné zväčšenie pri hoveri pre lepší efekt */
 }
 
 /* =========================

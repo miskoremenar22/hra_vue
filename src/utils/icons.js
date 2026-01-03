@@ -84,5 +84,6 @@ export const ingredientIcons = {
   "Párky": "🌭",
   "BBQ omáčka": "🤎",
   "Chlieb": "🍞",
-  "Maslo": "🧈"
+  "Maslo": "🧈",
+  "Slanina": "🥓",
 }

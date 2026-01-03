@@ -12,6 +12,7 @@ const emit = defineEmits(['drop-ingredient', 'serve', 'select-ingredient']);
 
 const isOpen = ref(false)
 const currentPage = ref(0)
+const itemsPerPage = 10;
 
 /* ===== DRAG STATE ===== */
 const dragging = ref(false)
@@ -24,8 +25,8 @@ const getIcon = (name) => ingredientIcons[name] || '📦'
 
 /* ===== PAGING ===== */
 const displayedIngredients = computed(() => {
-  const start = currentPage.value * 10
-  return props.ingredients.slice(start, start + 10)
+  const start = currentPage.value * itemsPerPage
+  return props.ingredients.slice(start, start + itemsPerPage)
 })
 
 const toggleMenu = () => {
@@ -33,7 +34,12 @@ const toggleMenu = () => {
 }
 
 const nextPage = () => {
-  currentPage.value = currentPage.value === 0 ? 1 : 0
+  // OPRAVA: Dynamický výpočet strán namiesto natvrdo 0 / 1
+  if ((currentPage.value + 1) * itemsPerPage < props.ingredients.length) {
+    currentPage.value++
+  } else {
+    currentPage.value = 0
+  }
 }
 
 /* ===== DRAG LOGIKA (Iba Drag & Drop) ===== */
@@ -104,11 +110,13 @@ const onDrop = (e) => {
         </div>
       </div>
 
-      <div v-if="ingredients.length > 10" class="menu-footer">
-        <span class="page-info">{{ currentPage + 1 }} / {{ Math.ceil(ingredients.length / 10) }}</span>
-  
-        <button class="nav-btn" @click="nextPage">
-          {{ (currentPage + 1) * 10 < ingredients.length ? '➡' : '⬅' }}
+      <div v-if="props.ingredients.length > itemsPerPage" class="menu-footer">
+      <span class="page-info">
+        {{ currentPage + 1 }} / {{ Math.ceil(props.ingredients.length / itemsPerPage) }}
+      </span>
+
+      <button class="nav-btn" @click="nextPage">
+        {{ (currentPage + 1) * itemsPerPage < props.ingredients.length ? '➡' : '⬅' }}
         </button>
       </div>
     </div>
@@ -126,7 +134,9 @@ const onDrop = (e) => {
 </template>
 
 <style scoped>
-/* Základný kontajner */
+/* =========================================
+   1. ZÁKLADNÝ KONTAJNER A SPOLEČNÉ TLAČIDLÁ
+   ========================================= */
 .ingredients-system {
   position: relative;
   z-index: 1000;
@@ -139,10 +149,10 @@ const onDrop = (e) => {
   left: 20px;
   display: flex;
   align-items: flex-end;
-  gap: 15px; /* Gapa medzi Surovinami a Zvončekom */
+  gap: 15px;
 }
 
-/* Spoločný štýl pre obe hlavné tlačidlá */
+/* Spoločný základ pre hlavné ovládacie tlačidlá */
 .open-trigger, .serve-btn {
   width: 80px;
   height: 80px;
@@ -157,6 +167,11 @@ const onDrop = (e) => {
   transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+.open-trigger:hover, .serve-btn:hover:not(:disabled) {
+  transform: translateY(-5px);
+  filter: brightness(1.1);
+}
+
 /* Tlačidlo Suroviny 🥫 */
 .open-trigger {
   background: #ff9800;
@@ -167,28 +182,18 @@ const onDrop = (e) => {
   line-height: 1;
 }
 
-.open-trigger .label {
-  font-size: 13px; /* Zväčšený text */
-  color: white;
-  font-weight: 900; /* Extra hrubý */
-  text-transform: uppercase;
-  margin-top: -2px;
-}
-
 /* Tlačidlo Zvoniť 🛎️ */
 .serve-btn {
-  position: fixed; /* Musí byť fixed, aby sa hýbalo nezávisle */
+  position: fixed;
   bottom: 20px;
-  left: 115px; /* Základná pozícia (20 + 80 + 15 gapa) */
+  left: 115px; /* Základná pozícia: 20 (okraj) + 80 (tlačidlo) + 15 (gap) */
   background: #2ecc71;
   font-size: 2.5rem;
 }
 
-/* POSUNUTIE ZVONČEKA DOSTRANY */
 .serve-btn.shifted {
-  /* Menu má 240px + okraj 20px + gapa 15px = 275px */
-  left: 275px; 
-  transform: scale(0.9); /* Jemne ho zmenšíme, aby nezavadzalo */
+  left: 275px; /* Posun keď je menu otvorené */
+  transform: scale(0.9);
 }
 
 .serve-btn:disabled {
@@ -198,35 +203,33 @@ const onDrop = (e) => {
   box-shadow: none;
 }
 
-.serve-btn:hover:not(:disabled), .open-trigger:hover {
-  transform: translateY(-5px);
-  filter: brightness(1.1);
-}
-
-/* ŠPAJZA (Side Menu) */
+/* =========================================
+   2. ŠPAJZA (SIDE MENU) - KONTAJNER
+   ========================================= */
 .side-menu {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
   width: 240px;
   height: 520px;
   background: rgba(255, 255, 255, 0.98);
   border-radius: 20px;
-  border: 4px solid #5d4037; /* Trochu hrubší pre lepší kontrast */
+  border: 4px solid #5d4037;
   display: flex;
   flex-direction: column;
   box-shadow: 5px 5px 25px rgba(0,0,0,0.5);
-  position: fixed; /* Zmenené na fixed pre stabilitu */
-  bottom: 20px;
-  left: 20px;
   z-index: 1100;
+  overflow: hidden; /* Dôležité: udrží obsah vnútri hnedého rámu */
 }
 
 .menu-header {
+  flex-shrink: 0;
   padding: 12px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: #5d4037;
   color: white;
-  border-radius: 14px 14px 0 0;
 }
 
 .menu-header h3 {
@@ -251,13 +254,17 @@ const onDrop = (e) => {
 
 .close-btn:hover { background: rgba(255,255,255,0.4); }
 
+/* =========================================
+   3. MRIEŽKA SO SUROVINAMI (GRID)
+   ========================================= */
 .ingredients-grid {
-  flex-grow: 1;
+  flex: 1; /* Zaberie zvyšok miesta medzi hlavou a pätou */
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: repeat(5, 1fr);
   gap: 10px;
   padding: 12px;
+  overflow-y: auto;
 }
 
 .ing-item {
@@ -283,6 +290,7 @@ const onDrop = (e) => {
 }
 
 .ing-icon { font-size: 32px; margin-bottom: 2px; pointer-events: none; }
+
 .ing-name { 
   font-size: 11px; 
   text-align: center; 
@@ -293,12 +301,18 @@ const onDrop = (e) => {
   text-transform: uppercase;
 }
 
+/* =========================================
+   4. PÄTA (STRÁNKOVANIE)
+   ========================================= */
 .menu-footer {
-  padding: 10px 15px;
+  flex-shrink: 0; /* Nikdy sa nezmenší */
+  height: 60px;
+  padding: 0 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid #eee;
+  border-top: 2px solid #eee;
+  background: white;
 }
 
 .nav-btn {
@@ -317,6 +331,9 @@ const onDrop = (e) => {
 
 .page-info { font-size: 14px; color: #5d4037; font-weight: 900; }
 
+/* =========================================
+   5. OSTATNÉ (GHOST, RESPONZIVITA)
+   ========================================= */
 .drag-ghost {
   position: fixed;
   pointer-events: none;
@@ -326,43 +343,20 @@ const onDrop = (e) => {
   filter: drop-shadow(0 8px 16px rgba(0,0,0,0.4));
 }
 
-/* RESPONZIVITA */
-/* =========================
-   MOBILE LANDSCAPE – ŠPAJZA
-========================= */
 @media (max-width: 900px) and (orientation: landscape) {
-  .recipes-system {
-    bottom: 10px;
-    right: 10px;
-  }
-  .triggers-wrapper{
-    gap: 0px;
-  }
+  .triggers-wrapper { gap: 0px; }
 
-  .open-trigger {
+  .open-trigger, .serve-btn {
     width: 60px;
     height: 60px;
     font-size: 1.8rem;
   }
 
-  .open-trigger .label {
-    font-size: 9px;
-  }
-
-  .serve-btn{
-    width: 60px;
-    height: 60px;
-    font-size: 1.8rem;
-  }
-
-  .serve-btn.shifted {
-    left: 350px; 
-    transform: scale(0.9); 
-  }
+  .serve-btn.shifted { left: 350px; }
 
   .side-menu {
-    width: 35%;
-    height: 320px;
+    width: 300px;
+    height: 90vh;
     bottom: 0;
     left: 0;
     border-radius: 20px 20px 0 0;
@@ -372,21 +366,10 @@ const onDrop = (e) => {
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(4, 1fr);
     gap: 4px;
+    padding: 8px;
   }
 
-  .ing-item {
-    padding: 4px;
-  }
-
-  .ing-icon {
-    font-size: 22px;
-  }
-
-  .ing-name {
-    font-size: 9px;
-  }
+  .ing-icon { font-size: 22px; }
+  .ing-name { font-size: 9px; }
 }
-
-
-
 </style>
