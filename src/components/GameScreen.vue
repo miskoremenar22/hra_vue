@@ -716,6 +716,7 @@ onUnmounted(() => {
 
 .timer-text {
   margin-top: 4px;
+  margin-right: 8px;
   font-size: 12px;
   text-align: right;
   color: rgba(255,255,255,0.85);

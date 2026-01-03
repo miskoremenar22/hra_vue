@@ -83,8 +83,8 @@ const nextPage = () => {
   display: flex;
   flex-direction: column;
   position: absolute;
-  bottom: 20px;
-  right: 20px;
+  bottom: 0px;
+  right: 0px;
   box-shadow: -5px 5px 20px rgba(0,0,0,0.3);
   overflow: hidden; /* Dôležité: aby nič nepretekalo cez zaoblené rohy */
 }

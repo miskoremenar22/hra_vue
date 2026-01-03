@@ -75,7 +75,7 @@
         "timeLimit": 120,
         "maxCustomers": 4,
         "spawnInterval": { "min": 4, "max": 8 },
-        "requiredScore": 750,
+        "requiredScore": 600,
         "recipes": ["m11", "m12", "m18", "m19"]
       }
     ]
