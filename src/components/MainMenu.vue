@@ -320,4 +320,97 @@ const onVolumeInput = (e) => {
   box-shadow: 0 8px 0 #0097a7;
 }
 .btn-info:hover { background: #26c6da; }
+
+/* 6. RESPONSIVE PRE MOBIL NA ŠÍRKU (LANDSCAPE) */
+@media (orientation: landscape) and (max-height: 500px) {
+  .menu-wrapper {
+    padding: 10px;
+    align-items: center; /* Vycentrovanie na stred výšky */
+  }
+
+  .menu-card {
+    display: flex;
+    flex-direction: row; /* Prvky vedľa seba */
+    align-items: center;
+    justify-content: space-between;
+    width: 95%;
+    max-width: 850px;
+    padding: 1.5rem 2rem;
+    gap: 30px;
+    border-radius: 30px;
+  }
+
+  /* Ľavá strana: Chef a Nadpis */
+  .chef-section {
+    margin-bottom: 0;
+    flex: 1;
+  }
+
+  .chef-avatar {
+    width: 80px;
+    height: 80px;
+    line-height: 80px;
+    font-size: 45px;
+  }
+
+  .title {
+    font-size: 1.8rem;
+    margin-top: 10px;
+    margin-bottom: 0;
+  }
+
+  /* Pravá strana: Tlačidlá do mriežky 2x2 */
+  .button-group {
+    flex: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dva stĺpce */
+    gap: 12px;
+  }
+
+  .btn {
+    padding: 12px 15px;
+    font-size: 0.9rem;
+    border-radius: 12px;
+  }
+
+  /* Špeciálne pre hudobné tlačidlo v mriežke */
+  .btn-music {
+    grid-column: span 1; /* Ak chceš, aby hudba zaberala 1 slot */
+    padding: 12px 15px;
+  }
+
+  /* Úprava slidera pre menšie tlačidlo */
+  .btn-content {
+    gap: 8px;
+  }
+  
+  .btn-icon-fixed {
+    min-width: 25px;
+    font-size: 1.1rem;
+  }
+
+  .volume-slider::-webkit-slider-thumb {
+    height: 14px;
+    width: 14px;
+  }
+
+  .footer-text {
+    display: none; /* Schováme text naspodu, aby nezaberal miesto */
+  }
+
+  /* Zmenšenie dekoratívnych ikon, aby nezavadzali */
+  .bg-decor .float {
+    font-size: 25px;
+  }
+}
+
+/* Úprava pre veľmi nízke displeje (napr. staršie iPhony v landscape) */
+@media (orientation: landscape) and (max-height: 380px) {
+  .menu-card {
+    padding: 1rem;
+    gap: 15px;
+  }
+  .title { font-size: 1.5rem; }
+  .chef-avatar { display: none; } /* Schováme avatara úplne, ak je fakt málo miesta */
+}
 </style>

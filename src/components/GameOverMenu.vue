@@ -244,4 +244,108 @@ onMounted(() => {
   .stars-display { margin-bottom: 0.5rem; }
   .stats-container { margin-bottom: 0.8rem; }
 }
+
+/* --- RESPONSIVE: GAME OVER / WIN NA ŠÍRKU (LANDSCAPE) --- */
+@media (orientation: landscape) and (max-height: 500px) {
+  
+  .game-over-overlay {
+    padding: 10px;
+  }
+
+  .game-over-card {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr; /* Rozdelenie na vizuál a dáta */
+    align-items: center;
+    max-width: 700px;
+    padding: 1.2rem 2rem;
+    gap: 20px;
+    border-radius: 30px;
+    overflow: hidden; /* Zamedzenie scrollu */
+  }
+
+  /* 1. Ľavá strana: Titul a Hviezdy */
+  .title {
+    font-size: 1.2rem !important;
+    margin-bottom: 0.8rem;
+    grid-column: 1;
+  }
+
+  .stars-display {
+    margin-bottom: 0;
+    gap: 15px;
+  }
+
+  .star-wrapper {
+    font-size: 50px; /* Hviezdy môžu byť v landscape dominantné */
+  }
+
+  /* 2. Pravá strana: Štatistiky (Mriežka 2x2) */
+  .stats-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px; /* Tenké čiary */
+    margin-bottom: 1rem;
+    background: #efebe9; /* Farba čiar */
+    border: 1px solid #efebe9;
+  }
+
+  .stat-item {
+    background: #f8f5f2;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.4rem;
+    border-bottom: none;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    margin-bottom: 2px;
+  }
+
+  .stat-value {
+    font-size: 0.9rem;
+  }
+
+  .highlight {
+    font-size: 1rem;
+  }
+
+  /* 3. Tlačidlá vedľa seba */
+  .action-buttons {
+    flex-direction: row; /* Tlačidlá v jednom riadku */
+    gap: 12px;
+  }
+
+  .btn {
+    padding: 0.8rem;
+    font-size: 0.85rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+  }
+
+  .btn-retry {
+    box-shadow: 0 4px 0 #2e7d32;
+  }
+
+  .btn-menu {
+    box-shadow: 0 4px 0 #d7ccc8;
+  }
+
+  /* Efekt stlačenia */
+  .btn:active {
+    transform: translateY(3px) !important;
+  }
+}
+
+/* Extrémne nízke displeje */
+@media (orientation: landscape) and (max-height: 360px) {
+  .game-over-card {
+    padding: 0.8rem 1.5rem;
+    gap: 10px;
+  }
+  .star-wrapper { font-size: 40px; }
+  .title { font-size: 1rem !important; }
+  .stat-item { padding: 0.3rem; }
+  .btn { padding: 0.6rem; }
+}
 </style>

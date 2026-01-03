@@ -137,4 +137,89 @@ h1::after {
   h1 { font-size: 1.2rem; }
   .btn { padding: 0.9rem; font-size: 0.95rem; }
 }
+
+/* --- RESPONSIVE: PAUZA NA ŠÍRKU (LANDSCAPE) --- */
+@media (orientation: landscape) and (max-height: 500px) {
+  
+  /* 1. Celkový kontajner */
+  .pause-overlay {
+    padding: 10px;
+  }
+
+  .pause-card {
+    max-width: 520px; /* Rozšírime kartu pre 2 stĺpce */
+    padding: 1.2rem 2rem;
+    border-radius: 30px;
+  }
+
+  /* 2. Nadpis - kompaktný */
+  h1 {
+    font-size: 1.1rem;
+    margin-bottom: 1.2rem;
+    letter-spacing: 1px;
+  }
+
+  h1::after {
+    bottom: -8px;
+    width: 30px;
+    height: 3px;
+  }
+
+  /* 3. Tlačidlá do mriežky 2x2 */
+  .pause-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dva stĺpce */
+    gap: 10px;
+  }
+
+  .btn {
+    padding: 0.8rem; /* Zmenšený padding */
+    font-size: 0.9rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.1); /* Nižší tieň pre menšie tlačidlá */
+  }
+
+  /* 4. Špeciálna úprava pre Resume (Zelené) */
+  .resume {
+    margin-bottom: 0; /* Zrušíme odsadenie, ktoré bolo v režime na výšku */
+    box-shadow: 0 4px 0 #2e7d32;
+  }
+
+  .resume:hover {
+    box-shadow: 0 6px 0 #2e7d32;
+  }
+
+  /* Úprava tieňov pre ostatné tlačidlá */
+  .retry, .levels, .main {
+    box-shadow: 0 4px 0 #d7ccc8;
+  }
+  
+  .retry:hover, .levels:hover, .main:hover {
+    box-shadow: 0 6px 0 #d7ccc8;
+  }
+
+  /* Efekt stlačenia (menej hlboký kvôli nižším tieňom) */
+  .btn:active {
+    transform: translateY(3px) !important;
+  }
+}
+
+/* Extrémne nízke displeje (max 340px výška) */
+@media (orientation: landscape) and (max-height: 340px) {
+  .pause-card {
+    padding: 0.8rem 1.5rem;
+  }
+  h1 {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+  }
+  .pause-buttons {
+    gap: 8px;
+  }
+  .btn {
+    padding: 0.6rem;
+    font-size: 0.85rem;
+  }
+}
+
 </style>

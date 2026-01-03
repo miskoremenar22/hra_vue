@@ -249,4 +249,109 @@ onMounted(() => {
   .stat-label { font-size: 0.75rem; }
   .stat-value { font-size: 1.2rem; }
 }
+
+/* --- RESPONSIVE: ŠTATISTIKY NA ŠÍRKU (LANDSCAPE) --- */
+@media (orientation: landscape) and (max-height: 500px) {
+  
+  /* 1. Celkový kontajner modalu */
+  .modal-backdrop {
+    padding: 10px; /* Menej miesta okolo */
+  }
+
+  .modal-card {
+    max-width: 580px; /* Rozšírime kartu, aby sa zmestili 2 stĺpce */
+    padding: 1rem 1.5rem;
+    border-radius: 25px;
+  }
+
+  /* 2. Kompaktná hlavička */
+  .header-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 0.8rem;
+  }
+
+  .header-icon-glow {
+    font-size: 1.8rem; /* Menšia trofej */
+    margin-bottom: 0;
+  }
+
+  .title {
+    font-size: 1.2rem;
+  }
+
+  .divider {
+    display: none; /* Schováme čiaru, aby sme ušetrili pixely na výšku */
+  }
+
+  .close-x {
+    top: 10px;
+    right: 15px;
+    font-size: 22px;
+  }
+
+  /* 3. Mriežka štatistík 2x2 */
+  .stats-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dva stĺpce vedľa seba */
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+
+  .stat-row {
+    padding: 0.6rem 0.8rem; /* Štíhlejšie riadky */
+    border-radius: 15px;
+    margin: 0; /* Zrušíme prípadné vonkajšie okraje */
+  }
+
+  .stat-info {
+    flex-direction: row; /* Štítok a hodnota v jednom riadku v rámci bunky */
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .stat-value {
+    font-size: 1.1rem;
+  }
+
+  .stat-icon-bg {
+    width: 35px;
+    height: 35px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+  }
+
+  /* 4. Tlačidlo - kompaktná verzia */
+  .confirm-btn {
+    padding: 0.7rem;
+    font-size: 0.9rem;
+    border-radius: 14px;
+    box-shadow: 0 4px 0 #388e3c;
+  }
+
+  /* 5. Skrytie zbytočností */
+  .modal-bg-decor {
+    display: none;
+  }
+}
+
+/* Extrémne nízke displeje (max 340px výška) */
+@media (orientation: landscape) and (max-height: 340px) {
+  .modal-card {
+    padding: 0.5rem 1.2rem;
+  }
+  .header-section { margin-bottom: 0.4rem; }
+  .stats-list { gap: 6px; margin-bottom: 0.6rem; }
+  .stat-row { padding: 0.4rem 0.6rem; }
+  .stat-icon-bg { display: none; } /* Odstránime ikony štatistík pre extra miesto */
+}
+
+
 </style>

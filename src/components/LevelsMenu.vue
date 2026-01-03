@@ -532,4 +532,140 @@ const getAttempts = (id) => {
   pointer-events: none;
   z-index: 100 !important;
 }
+
+/* --- FINÁLNE RESPONSIVE: MOBIL NA ŠÍRKU (LANDSCAPE) --- */
+@media (orientation: landscape) and (max-height: 500px) {
+  
+  /* 1. Celkové pozadie a vycentrovanie */
+  .levels-screen {
+    justify-content: center;
+    padding: 10px;
+  }
+
+  /* 2. Kompaktné tlačidlo domov */
+  .back-btn {
+    top: 10px;
+    left: 10px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+    z-index: 110;
+  }
+  .back-text { display: none; }
+
+  /* 3. Hlavná karta - Fixné rozdelenie 1:1 */
+  .cuisine-container {
+    display: grid !important;
+    grid-template-columns: 1fr 1.2fr !important; /* Vľavo info, vpravo obsah */
+    align-items: center;
+    width: 95%;
+    max-width: 850px;
+    padding: 1.5rem 2rem;
+    gap: 20px;
+    border-radius: 35px;
+    min-height: 250px; /* Zabezpečí stabilitu výšky */
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* 4. Ľavá strana: Hlavička (vždy na rovnakom mieste) */
+  .cuisine-header {
+    margin-bottom: 0 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 2px solid rgba(0,0,0,0.05); /* Jemné oddelenie */
+    padding-right: 15px;
+  }
+
+  .cuisine-icon-wrapper {
+    font-size: 3rem !important;
+    margin-bottom: 5px;
+  }
+
+  .cuisine-title {
+    font-size: 1.4rem !important;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  /* 5. Pravá strana: STAV ODOMKNUTÉ (Mriežka 2x2) */
+  .levels-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-rows: repeat(2, 1fr) !important;
+    gap: 12px;
+    width: 100%;
+    margin: 0;
+  }
+
+  .level-tile {
+    padding: 10px 5px !important;
+    min-height: 75px !important;
+    border-radius: 20px;
+  }
+
+  /* 6. Pravá strana: STAV ZAMKNUTÉ (Oprava vizuálu) */
+  .lock-overlay {
+    position: static !important; /* Zrušíme prekrývanie cez celú kartu */
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .lock-content {
+    background: rgba(0, 0, 0, 0.03);
+    padding: 15px;
+    border-radius: 20px;
+    border: 2px dashed rgba(0,0,0,0.1);
+    width: 100%;
+  }
+
+  .lock-emoji {
+    font-size: 2rem !important;
+    margin-bottom: 5px !important;
+  }
+
+  .lock-content p {
+    font-size: 0.9rem !important;
+    margin: 0;
+    color: #8d6e63;
+  }
+
+  .lock-content small {
+    font-size: 0.75rem;
+    opacity: 0.8;
+  }
+
+  /* 7. Navigácia a šípky */
+  .bottom-nav {
+    margin-top: 10px;
+    gap: 1.5rem;
+  }
+
+  .arrow-btn {
+    width: 45px;
+    height: 45px;
+  }
+
+  /* 8. Fix pre vizuálne "duchov" a dekorácie */
+  .bg-decor .float, .bg-overlay {
+    display: none;
+  }
+}
+
+/* Úprava pre extrémne nízke displeje */
+@media (orientation: landscape) and (max-height: 380px) {
+  .cuisine-container { padding: 0.5rem 1rem; min-height: 200px; }
+  .cuisine-icon-wrapper { font-size: 2.2rem !important; }
+  .cuisine-title { font-size: 1.1rem !important; }
+  .level-tile { min-height: 60px !important; }
+  .lock-content { padding: 8px; }
+}
+
+
 </style>
