@@ -176,8 +176,21 @@ defineExpose({
   react
 })
 
+const spacing = ref(150)
+
+const recalcSpacing = () => {
+  const vw = window.innerWidth
+
+  if (vw < 480) spacing.value = 80       // malé mobily
+  else if (vw < 768) spacing.value = 80 // mobily
+  else if (vw < 1024) spacing.value = 150 // tablet
+  else if (vw < 1440) spacing.value = 160 // desktop
+  else spacing.value = 180               // veľké monitory
+}
+
 onMounted(() => {
   recalc()
+  recalcSpacing()
   window.addEventListener('resize', recalc)
   phase.value = 'enter'
   x.value = startX
@@ -197,7 +210,7 @@ onUnmounted(() => {
       <div
         class="queue-offset"
         ref="customerEl"
-        :style="{ transform: `translateX(${-queueIndex * 150}px)` }"
+        :style="{ transform: `translateX(${-queueIndex * spacing}px)` }"
       >
         <div v-if="mood" class="mood-bubble">
           {{ moodEmoji }}
@@ -269,27 +282,75 @@ onUnmounted(() => {
   100% { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 
-/* TABLET & MOBILE – IBA POSUN HORE */
-@media (max-width: 900px) and (orientation: landscape) {
-  .customer-wrapper {
-    bottom: 59%;
-  }
-
-  .customer img{
-    width: clamp(80px, 10vw, 120px);;
-  }
-  
-  .order-bubble{
-    font-size: clamp(0.7rem, 1.0vw, 0.8rem);
-    bottom: 90%;
-  }
-
-  .mood-bubble{
-    font-size: 27px;
-  }
-  
+.customer-wrapper {
+  position: absolute;
+  bottom: 54%;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
+/* 📱 MOBILY */
+@media (max-width: 768px) {
+  .customer-wrapper {
+    bottom: 58%;
+  }
+}
 
+/* 📱 MOBILE LANDSCAPE */
+@media (max-width: 950px) and (orientation: landscape) {
+  .customer-wrapper {
+    bottom: 60%;
+  }
+
+  .customer img {
+    width: clamp(80px, 10vw, 120px);
+  }
+
+  .order-bubble {
+    font-size: 0.55rem;
+    bottom: 95%;
+  }
+
+  .mood-bubble {
+    font-size: 25px;
+    bottom: 145%;
+  }
+}
+
+/* 💻 MENŠÍ DESKTOP */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .customer-wrapper {
+    bottom: 54%;
+  }
+}
+
+/* 🖥 FULL HD */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .customer-wrapper {
+    bottom: 53%;
+  }
+}
+
+/* 🖥 2K */
+@media (min-width: 1920px) {
+  .customer-wrapper {
+    bottom: 51%;
+  }
+
+  .customer img {
+    width: clamp(120px, 10vw, 200px);
+  }
+
+  .order-bubble {
+    font-size: 1.2rem;
+    bottom: 92%;
+  }
+
+  .mood-bubble {
+    font-size: 60px;
+    bottom: 130%;
+  }
+}
 
 </style>

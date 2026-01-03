@@ -29,16 +29,8 @@ const startTime = ref(Date.now());
 const timeToFirstStar = ref(null);
 const currentAttempts = ref(0);
 
-/**
- * =========================================
- *  DÔLEŽITÉ: RESOLVER LEVELU (DYNAMICKÉ)
- *  - najprv hľadáme level v props.cuisineType (ak existuje)
- *  - až potom fallback cez všetky kuchyne
- *  - zároveň vyrátame "localLevel" podľa poradia v danej kuchyni (1..N)
- * =========================================
- */
 const findLevelById = (levelId, preferredCuisineKey = null) => {
-  // 1) Preferovaná kuchyňa (toto rieši tvoj bug: level 5 v asian sa neotvorí ako mexican)
+  // 1) Preferovaná kuchyňa 
   if (preferredCuisineKey && levelsData?.[preferredCuisineKey]?.levels) {
     const cuisine = levelsData[preferredCuisineKey]
     const idx = cuisine.levels.findIndex(l => l.level === levelId)
@@ -52,7 +44,7 @@ const findLevelById = (levelId, preferredCuisineKey = null) => {
     }
   }
 
-  // 2) Fallback: nájdi prvý match v celom JSON (ak cuisineType neprišiel / je zlý)
+  // 2) Fallback: nájdi prvý match v celom JSON 
   for (const [cuisineKey, cuisine] of Object.entries(levelsData || {})) {
     const idx = cuisine.levels.findIndex(l => l.level === levelId)
     if (idx !== -1) {
@@ -79,9 +71,6 @@ const servedTotalCount = ref(0)
 /**
  * =========================================
  * 2. KONFIGURÁCIA LEVELU A DÁTA (OPRAVA)
- * - currentCuisineKey berieme z resolveru (nie natvrdo z props.cuisineType)
- * - currentLevelConfig je level objekt z levels.json
- * - localLevelNumber = 1..N v rámci kuchyne (na progres/attempts)
  * =========================================
  */
 const levelEntry = computed(() => findLevelById(props.levelId, props.cuisineType))
@@ -113,7 +102,6 @@ const endLevel = () => {
   levelEnded.value = true
   clearInterval(timerInterval)
 
-  // !!! OPRAVA: progres ukladáme podľa lokálneho levelu v kuchyni (1..N), nie globálneho id
   updateLevelResult(
     currentCuisineKey.value,
     localLevelNumber.value,
@@ -164,16 +152,12 @@ const handleGameOver = () => {
 };
 
 onMounted(() => {
-  // Pri štarte započítame pokus
-  // !!! OPRAVA: attempts ukladáme podľa lokálneho levelu (1..N), nie globálneho id
   currentAttempts.value = incrementLevelAttempt(currentCuisineKey.value, localLevelNumber.value);
 })
 
 /**
  * =========================================
  *  DYNAMICKÉ POVOLENÉ RECEPTY:
- *  - berieme všetky levely v danej kuchyni do aktuálneho indexu (inclusive)
- *  - nie podľa "l.level <= props.levelId", lebo global čísla skáču (mex 5..8)
  * =========================================
  */
 const allowedRecipeIds = computed(() => {
@@ -497,7 +481,6 @@ onUnmounted(() => {
       <button class="pause-trigger" @click.stop="isPaused = true">PAUZA</button>
 
       <div class="level-info">
-        <!-- OPRAVA: cuisineType môže byť undefined, použijeme currentCuisineKey -->
         Level {{ levelId }} | {{ (currentCuisineKey || '').toUpperCase() }}
       </div>
 
@@ -510,7 +493,6 @@ onUnmounted(() => {
         </div>
 
         <div class="score-text">
-          <!-- OPRAVA: poistka na currentLevelConfig -->
           {{ score }} / {{ currentLevelConfig?.requiredScore ?? 0 }}
         </div>
       </div>
@@ -630,7 +612,6 @@ onUnmounted(() => {
 }
 
 .pause-trigger {
-  /* Farby ladiace s tvojím dizajnom */
   background: #f8f5f2; 
   color: #5d4037;
   border: 1px solid #efebe9;
@@ -784,7 +765,6 @@ onUnmounted(() => {
 
 .plate {
   /* 1. Šírku teraz definujeme cez VH (viewport height) */
-  /* Skúsime cca 35vh až 40vh, aby na mobile vyzerala dostatočne veľká */
   width: clamp(160px, 38vh, 320px); 
   
   /* 2. Poistka: Na extrémne úzkych mobiloch nesmie byť širšia ako 90% obrazovky */
