@@ -7,7 +7,7 @@
         "timeLimit": 180,
         "maxCustomers": 2,
         "spawnInterval": { "min": 8, "max": 15 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["a1", "a2", "a3", "a15"]
       },
       {
@@ -16,7 +16,7 @@
         "timeLimit": 180,
         "maxCustomers": 3,
         "spawnInterval": { "min": 6, "max": 12 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["a4", "a5", "a8", "a16"]
       },
       {
@@ -25,7 +25,7 @@
         "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 5, "max": 10 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["a6", "a7", "a10", "a12", "a13", "a18"]
       },
       {
@@ -34,7 +34,7 @@
         "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 4, "max": 8 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["a11", "a14", "a17", "a19"]
       }
     ]
@@ -48,7 +48,7 @@
         "timeLimit": 180,
         "maxCustomers": 2,
         "spawnInterval": { "min": 9, "max": 15 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["m1", "m2", "m13", "m20"]
       },
       {
@@ -57,7 +57,7 @@
         "timeLimit": 180,
         "maxCustomers": 3,
         "spawnInterval": { "min": 7, "max": 12 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["m3", "m5", "m6", "m16"]
       },
       {
@@ -66,7 +66,7 @@
         "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 5, "max": 10 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["m4", "m7", "m9", "m10", "m14", "m15"]
       },
       {
@@ -75,7 +75,7 @@
         "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 4, "max": 8 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["m11", "m12", "m18", "m19"]
       }
     ]
@@ -89,7 +89,7 @@
         "timeLimit": 180,
         "maxCustomers": 2,
         "spawnInterval": { "min": 9, "max": 15 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["i1", "i3", "i13", "i20"]
       },
       {
@@ -98,7 +98,7 @@
         "timeLimit": 180,
         "maxCustomers": 3,
         "spawnInterval": { "min": 7, "max": 12 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["i2", "i5", "i8", "i14"]
       },
       {
@@ -107,7 +107,7 @@
         "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 5, "max": 10 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["i4", "i7", "i10", "i11", "i16"]
       },
       {
@@ -116,7 +116,7 @@
         "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 4, "max": 8 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["i6", "i9", "i12", "i15", "i19"]
       }
     ]
@@ -130,7 +130,7 @@
         "timeLimit": 180,
         "maxCustomers": 2,
         "spawnInterval": { "min": 9, "max": 15 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["f1", "f3", "f5", "f15", "f20"]
       },
       {
@@ -139,7 +139,7 @@
         "timeLimit": 180,
         "maxCustomers": 3,
         "spawnInterval": { "min": 7, "max": 12 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["f2", "f6", "f8", "f11", "f16"]
       },
       {
@@ -148,7 +148,7 @@
         "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 5, "max": 10 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["f4", "f7", "f9", "f10", "f14", "f17"]
       },
       {
@@ -157,7 +157,7 @@
         "timeLimit": 180,
         "maxCustomers": 4,
         "spawnInterval": { "min": 4, "max": 8 },
-        "requiredScore": 10,
+        "requiredScore": 300,
         "recipes": ["f12", "f18", "f19"]
       }
     ]

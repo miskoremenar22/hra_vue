@@ -29,8 +29,9 @@ const nextPage = () => {
 
     <div v-if="isOpen" class="side-menu">
       <div class="menu-header">
+        <h3>Recepty</h3>
         <button class="close-btn" @click="isOpen = false">✕</button>
-        <h3>Kuchárka</h3>
+        
       </div>
 
       <div class="recipes-list">
@@ -86,9 +87,9 @@ const nextPage = () => {
   padding: 15px;
   display: flex;
   align-items: center;
+  justify-content: space-between; /* Toto rozdelí nadpis a X na kraje */
   background: #2e7d32;
   color: white;
-  /* Odstránil som border-radius, rieši to overflow: hidden na side-menu */
 }
 
 .recipes-list {
@@ -136,21 +137,21 @@ const nextPage = () => {
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 22px;
-  cursor: pointer;
-  margin-right: 12px; /* Odsadenie od nadpisu */
+  background: rgba(255,255,255,0.2); 
+  border: none; 
+  color: white; 
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 18px; 
+  cursor: pointer; 
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s, opacity 0.2s;
 }
 
 .close-btn:hover {
-  opacity: 0.8;
-  transform: scale(1.1);
+  background: rgba(255,255,255,0.4);
 }
 
 .close-btn:active {

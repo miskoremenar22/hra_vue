@@ -1,6 +1,26 @@
 <script setup>
-// Funkčnosť zostáva identická s tvojím pôvodným kódom
-const emit = defineEmits(['start-game', 'show-stats']);
+import { computed } from 'vue'
+
+const props = defineProps({
+  isMuted: Boolean,
+  volume: Number
+});
+
+const emit = defineEmits(['start-game', 'show-stats', 'toggle-music', 'change-volume', 'show-instructions']);
+
+
+// 100 polôh pre ikony - menia sa plynulejšie
+const volumeIcon = computed(() => {
+  if (props.isMuted || props.volume <= 0) return '🔇';
+  if (props.volume < 0.33) return '🔈';
+  if (props.volume < 0.67) return '🔉';
+  return '🔊';
+});
+
+const onVolumeInput = (e) => {
+  // Posielame presné desatinné číslo (0.00 až 1.00)
+  emit('change-volume', parseFloat(e.target.value));
+};
 </script>
 
 <template>
@@ -21,11 +41,7 @@ const emit = defineEmits(['start-game', 'show-stats']);
         </div>
       </div>
 
-      <h1 class="title">
-        <!--<span class="title-sub">Virtual</span> -->
-        Master Chef
-        <span class="title-dot">.</span>
-      </h1>
+      <h1 class="title">Master Chef<span class="title-dot">.</span></h1>
       
       <div class="button-group">
         <button @click="emit('start-game')" class="btn btn-play">
@@ -37,6 +53,33 @@ const emit = defineEmits(['start-game', 'show-stats']);
           <span class="btn-icon">📊</span>
           ŠTATISTIKY
         </button>
+
+        
+
+        <button @click="emit('show-instructions')" class="btn btn-info">
+          <span class="btn-icon">ℹ</span>
+          NÁVOD KU HRE
+        </button>
+
+        <button @click="emit('toggle-music')" class="btn btn-music">
+          <div class="btn-content">
+            <span class="btn-icon-fixed">{{ volumeIcon }}</span>
+            
+            <div class="slider-container" v-if="!isMuted">
+              <input 
+                type="range" 
+                min="0" 
+                max="1" 
+                step="0.01" 
+                :value="volume"
+                @input="onVolumeInput"
+                @click.stop 
+                class="volume-slider"
+              />
+            </div>
+            <span v-else class="btn-text-mute">HUDBA VYPNUTÁ</span>
+          </div>
+        </button>
       </div>
 
       <p class="footer-text">Pripravte sa na varenie!</p>
@@ -45,7 +88,7 @@ const emit = defineEmits(['start-game', 'show-stats']);
 </template>
 
 <style scoped>
-/* Celkový obal s kuchynským gradientom */
+/* 1. ZÁKLADNÉ ROZLOŽENIE */
 .menu-wrapper {
   position: relative;
   display: flex;
@@ -58,7 +101,6 @@ const emit = defineEmits(['start-game', 'show-stats']);
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Karta menu */
 .menu-card {
   position: relative;
   z-index: 10;
@@ -73,7 +115,7 @@ const emit = defineEmits(['start-game', 'show-stats']);
   max-width: 450px;
 }
 
-/* Sekcia s kuchárom */
+/* 2. CHÉF SEKCIÁ A NADPIS */
 .chef-section {
   margin-bottom: 1.5rem;
 }
@@ -104,7 +146,6 @@ const emit = defineEmits(['start-game', 'show-stats']);
   border: 3px solid white;
 }
 
-/* Nadpis */
 .title {
   color: #5d4037;
   font-size: 2.8rem;
@@ -114,17 +155,9 @@ const emit = defineEmits(['start-game', 'show-stats']);
   text-transform: uppercase;
 }
 
-.title-sub {
-  display: block;
-  font-size: 1rem;
-  color: #ff9800;
-  letter-spacing: 5px;
-  margin-bottom: 5px;
-}
-
 .title-dot { color: #4caf50; }
 
-/* Tlačidlá */
+/* 3. TLAČIDLÁ - ZÁKLADNÝ ŠTÝL */
 .button-group {
   display: flex;
   flex-direction: column;
@@ -133,7 +166,8 @@ const emit = defineEmits(['start-game', 'show-stats']);
 
 .btn {
   position: relative;
-  padding: 18px 30px;
+  width: 100%; /* Jednotná šírka */
+  padding: 18px 30px; /* JEDNOTNÁ VÝŠKA PRE VŠETKY */
   font-size: 1.1rem;
   font-weight: 800;
   border: none;
@@ -143,14 +177,11 @@ const emit = defineEmits(['start-game', 'show-stats']);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
   color: white;
-  box-shadow: 0 8px 0 rgba(0,0,0,0.1);
+  box-sizing: border-box; /* Dôležité pre správny výpočet šírky */
 }
 
-.btn-icon { font-size: 1.4rem; }
-
-/* PLAY Tlačidlo - Zelené */
+/* PLAY Tlačidlo */
 .btn-play {
   background: #4caf50;
   box-shadow: 0 8px 0 #388e3c;
@@ -159,14 +190,10 @@ const emit = defineEmits(['start-game', 'show-stats']);
 .btn-play:hover {
   transform: translateY(-2px);
   background: #43a047;
+  box-shadow: 0 10px 0 #388e3c;
 }
 
-.btn-play:active {
-  transform: translateY(6px);
-  box-shadow: 0 2px 0 #388e3c;
-}
-
-/* STATS Tlačidlo - Oranžové */
+/* STATS Tlačidlo */
 .btn-stats {
   background: #ff9800;
   box-shadow: 0 8px 0 #e68a00;
@@ -175,12 +202,79 @@ const emit = defineEmits(['start-game', 'show-stats']);
 .btn-stats:hover {
   transform: translateY(-2px);
   background: #fb8c00;
+  box-shadow: 0 10px 0 #e68a00;
 }
 
-.btn-stats:active {
-  transform: translateY(6px);
-  box-shadow: 0 2px 0 #e68a00;
+/* MUSIC Tlačidlo (Fialové) */
+.btn-music {
+  background: #7e57c2;
+  box-shadow: 0 8px 0 #5e35b1;
+  padding: 18px 25px; /* Mierne upravený bočný padding pre slider */
 }
+
+.btn-music:hover {
+  transform: translateY(-2px);
+  background: #9575cd;
+  box-shadow: 0 10px 0 #5e35b1;
+}
+
+/* Spoločný efekt pri kliknutí */
+.btn:active {
+  transform: translateY(6px);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+}
+
+/* 4. VNÚTORNÝ OBSAH TLAČIDLA HUDBY */
+.btn-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+}
+
+.btn-icon-fixed {
+  font-size: 1.4rem;
+  min-width: 35px; /* Fixná šírka, aby tlačidlo neskákalo pri zmene ikony */
+  display: flex;
+  justify-content: center;
+}
+
+.slider-container {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+}
+
+.volume-slider {
+  width: 100%;
+  height: 6px;
+  cursor: pointer;
+  accent-color: #ffffff;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+/* Štýl "bežca" na slideri */
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 18px;
+  width: 18px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.btn-text-mute {
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* 5. OSTATNÉ */
+.btn-icon { font-size: 1.4rem; margin-right: 8px; }
 
 .footer-text {
   margin-top: 2rem;
@@ -190,7 +284,6 @@ const emit = defineEmits(['start-game', 'show-stats']);
   opacity: 0.7;
 }
 
-/* Dekorácie na pozadí */
 .bg-decor .float {
   position: absolute;
   font-size: 40px;
@@ -205,7 +298,6 @@ const emit = defineEmits(['start-game', 'show-stats']);
 .icon-4 { top: 80%; right: 10%; animation: float-anim 9s infinite 2s; }
 .icon-5 { top: 45%; left: 5%; animation: float-anim 10s infinite; }
 
-/* Animácie */
 @keyframes float-chef {
   0%, 100% { transform: translateY(0) rotate(0); }
   50% { transform: translateY(-10px) rotate(5deg); }
@@ -217,11 +309,15 @@ const emit = defineEmits(['start-game', 'show-stats']);
   66% { transform: translate(-20px, 20px) rotate(-20deg); }
 }
 
-/* Pre mobilné zariadenia */
 @media (max-width: 480px) {
   .menu-card { padding: 2rem 1.5rem; }
   .title { font-size: 2.2rem; }
   .chef-avatar { width: 100px; height: 100px; font-size: 60px; line-height: 100px; }
 }
 
+.btn-info {
+  background: #00bcd4; /* Azúrová farba */
+  box-shadow: 0 8px 0 #0097a7;
+}
+.btn-info:hover { background: #26c6da; }
 </style>

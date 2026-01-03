@@ -1,15 +1,21 @@
 <script setup>
-import { ref } from 'vue'
+
 import MainMenu from './components/MainMenu.vue'
 import LevelsMenu from './components/LevelsMenu.vue'
 import GameScreen from './components/GameScreen.vue'
 import StatsModal from './components/StatsModal.vue'
+
+import { ref, watch, onMounted } from 'vue'
+import { audioManager } from './utils/audioManager.js'
+import Instructions from './components/Instructions.vue'
+
 
 const currentScreen = ref('menu')
 const isStatsOpen = ref(false)
 
 const selectedLevel = ref(null)
 const currentCuisine = ref(null)
+const isMuted = ref(false)
 
 const startLevel = (levelId) => {
   selectedLevel.value = levelId
@@ -22,13 +28,53 @@ const startLevel = (levelId) => {
 
   currentScreen.value = 'game'
 }
+
+const volume = ref(0.4); // Predvolená hlasitosť 40%
+
+const handleVolumeChange = (newVol) => {
+  volume.value = audioManager.setVolume(newVol);
+};
+
+const isInstructionsOpen = ref(false);
+
+// Sledovanie zmeny obrazovky, hudba
+watch(currentScreen, (newScreen) => {
+  if (newScreen === 'menu' || newScreen === 'levels') {
+    audioManager.play('menu')
+  } else if (newScreen === 'game') {
+    audioManager.play('game')
+  }
+}, { immediate: true })
+
+const toggleMusic = () => {
+  isMuted.value = audioManager.toggleMute()
+}
+
+// Spustenie hudby pri prvom kliknutí (kvôli Chrome/Safari blokovaniu)
+onMounted(() => {
+  const startAudio = () => {
+    audioManager.play('menu')
+    window.removeEventListener('click', startAudio)
+  }
+  window.addEventListener('click', startAudio)
+})
 </script>
 
 <template>
   <MainMenu
-    v-if="currentScreen === 'menu'"
-    @start-game="currentScreen = 'levels'"
-    @show-stats="isStatsOpen = true"
+  v-if="currentScreen === 'menu'"
+  @show-instructions="isInstructionsOpen = true"
+  :isMuted="isMuted"
+  :volume="volume"
+  @start-game="currentScreen = 'levels'"
+  @show-stats="isStatsOpen = true"
+  @toggle-music="toggleMusic"
+  @change-volume="handleVolumeChange"
+/>
+
+  <Instructions 
+    v-if="isInstructionsOpen" 
+    @close="isInstructionsOpen = false" 
   />
 
   <LevelsMenu
@@ -68,6 +114,48 @@ const startLevel = (levelId) => {
   height: 100dvh; 
   overflow: hidden;
   position: relative;
+}
+
+
+</style>
+
+<style>
+  /* App.vue */
+
+/* Tieto štýly sa aplikujú na celú aplikáciu */
+html, body, #app {
+  /* Zakáže označovanie textu (modré podfarbenie) */
+  user-select: none;
+  -webkit-user-select: none; /* Pre Safari */
+  -moz-user-select: none;    /* Pre Firefox */
+  -ms-user-select: none;     /* Pre starý IE */
+
+  /* Vynúti klasický šípkový kurzor všade, aj nad textom */
+  cursor: default;
+
+  /* Zakáže "ťahanie" obrázkov (aby ti hráč omylom neodtiahol pozadie) */
+  -webkit-user-drag: none;
+  
+  /* Odstráni modrý rámik/tieň pri kliknutí na mobiloch */
+  -webkit-tap-highlight-color: transparent;
+  
+  /* Zabezpečí, že sa nebude dať scrollovať hore-dole (ak hra zaberá celú obrazovku) */
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/* Obrázky by sa tiež nemali dať označiť alebo kopírovať potiahnutím */
+img {
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none; /* Ak nepotrebuješ na obrázky klikať */
+}
+
+/* Tlačidlá by mali mať stále "packu" (pointer), aby hráč vedel, že sú interaktívne */
+button, .btn, [role="button"], .clickable {
+  cursor: pointer;
 }
 
 </style>
